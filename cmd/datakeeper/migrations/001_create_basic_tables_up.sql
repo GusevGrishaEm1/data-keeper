@@ -1,5 +1,4 @@
 -- +goose Up
--- SQL in section 'Up' is executed when this migration is applied
 create table if not exists "data" (
     uuid uuid primary key,
     content bytea not null,
@@ -10,7 +9,7 @@ create table if not exists "data" (
 
 create index if not exists data_idx on "data" (created_by);
 
-create table if not exists "user_files" (
+create table if not exists "user_file" (
     uuid uuid primary key,
     content bytea not null,
     created_at timestamp not null,
@@ -18,7 +17,6 @@ create table if not exists "user_files" (
 );
 
 -- +goose Down
--- SQL in section 'Down' is executed when this migration is rolled back
-DROP TABLE IF EXISTS "user_files";
+DROP TABLE IF EXISTS "user_file";
 DROP INDEX IF EXISTS data_idx;
 DROP TABLE IF EXISTS "data";

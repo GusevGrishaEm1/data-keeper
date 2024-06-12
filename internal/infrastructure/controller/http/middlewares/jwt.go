@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/GusevGrishaEm1/data-keeper/internal/config"
@@ -11,18 +12,21 @@ import (
 
 type AuthMiddleware struct {
 	jwtkey string
+	logger *slog.Logger
 }
 
 func NewAuthMiddleware(config config.Config) *AuthMiddleware {
 	return &AuthMiddleware{
 		jwtkey: config.AuthService.JWTKey,
+		logger: slog.Default(),
 	}
 }
 
 func (m *AuthMiddleware) AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		cookie, err := c.Request().Cookie("User")
+		cookie, err := c.Cookie("User")
 		if err != nil {
+			m.logger.Error(err.Error())
 			return c.JSON(http.StatusUnauthorized, customerr.ToJson(err.Error()))
 		}
 
@@ -32,6 +36,7 @@ func (m *AuthMiddleware) AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc 
 			return []byte(m.jwtkey), nil
 		})
 		if err != nil {
+			m.logger.Error(err.Error())
 			return c.JSON(http.StatusUnauthorized, customerr.ToJson(err.Error()))
 		}
 
@@ -39,6 +44,7 @@ func (m *AuthMiddleware) AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc 
 			email := claims["email"].(string)
 			c.Set("User", email)
 		} else {
+			m.logger.Error("email not found")
 			return c.JSON(http.StatusUnauthorized, customerr.INVALID_TOKEN)
 		}
 

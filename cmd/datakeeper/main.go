@@ -27,7 +27,7 @@ func main() {
 	authconn, err := grpc.NewClient(
 		config.AuthService.URL,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithIdleTimeout(time.Second*time.Duration(config.AuthService.Timeout)),
+		grpc.WithIdleTimeout(5*time.Second),
 	)
 	if err != nil {
 		panic(err)
@@ -41,7 +41,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if err := goose.Up(dbMig, "./migrations"); err != nil {
+	if err := goose.SetDialect("postgres"); err != nil {
+		panic(err)
+	}
+	if err := goose.Up(dbMig, "migrations"); err != nil {
 		panic(err)
 	}
 	// start server

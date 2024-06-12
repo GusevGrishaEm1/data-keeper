@@ -8,7 +8,7 @@ import (
 
 // Config file
 type Config struct {
-	URL         string            `yaml:"url"`
+	Port        string            `yaml:"port"`
 	HTTPS       bool              `yaml:"https"`
 	PostgresDB  PostgresConfig    `yaml:"postgres_db"`
 	AuthService AuthServiceConfig `yaml:"auth_service"`

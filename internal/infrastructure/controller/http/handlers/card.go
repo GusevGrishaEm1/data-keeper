@@ -91,7 +91,11 @@ func NewCardHandler(cardService CardService) *CardHandler {
 
 // Create card
 func (h *CardHandler) CreateCard(c echo.Context) error {
-	ctx := c.Request().Context()
+	user := c.Get("User")
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, customerr.ToJson("unauthorized"))
+	}
+	ctx := context.WithValue(c.Request().Context(), "User", user)
 	req := new(CreateCardRequest)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, customerr.ToJson(err.Error()))
@@ -106,7 +110,11 @@ func (h *CardHandler) CreateCard(c echo.Context) error {
 
 // Update card
 func (h *CardHandler) UpdateCard(c echo.Context) error {
-	ctx := c.Request().Context()
+	user := c.Get("User")
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, customerr.ToJson("unauthorized"))
+	}
+	ctx := context.WithValue(c.Request().Context(), "User", user)
 	req := new(UpdateCardRequest)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, customerr.ToJson(err.Error()))
@@ -121,7 +129,11 @@ func (h *CardHandler) UpdateCard(c echo.Context) error {
 
 // Delete card
 func (h *CardHandler) DeleteCard(c echo.Context) error {
-	ctx := c.Request().Context()
+	user := c.Get("User")
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, customerr.ToJson("unauthorized"))
+	}
+	ctx := context.WithValue(c.Request().Context(), "User", user)
 	req := new(DeleteCardRequest)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, customerr.ToJson(err.Error()))
@@ -136,7 +148,11 @@ func (h *CardHandler) DeleteCard(c echo.Context) error {
 
 // Get cards by user
 func (h *CardHandler) GetCardsByUser(c echo.Context) error {
-	ctx := c.Request().Context()
+	user := c.Get("User")
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, customerr.ToJson("unauthorized"))
+	}
+	ctx := context.WithValue(c.Request().Context(), "User", user)
 	req := new(GetAllCardsRequest)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, customerr.ToJson(err.Error()))

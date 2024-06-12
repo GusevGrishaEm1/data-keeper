@@ -22,13 +22,13 @@ func (s *userFileRepo) Insert(ctx context.Context, data entity.UserFile) error {
 }
 
 func (s *userFileRepo) Delete(ctx context.Context, user string, uuid string) error {
-	query := `delete from "user_file" where uuid = $1 and created_by = $2`
+	query := `delete from "user_file" where uuid::text = $1 and created_by = $2`
 	_, err := s.DB.Exec(ctx, query, uuid, user)
 	return err
 }
 
 func (s *userFileRepo) GetByUUID(ctx context.Context, user string, uuid string) (*entity.UserFile, error) {
-	query := `select uuid, content, created_at, created_by from "user_file" where uuid = $1 and created_by = $2`
+	query := `select uuid, content, created_at, created_by from "user_file" where uuid::text = $1 and created_by = $2`
 	row := s.DB.QueryRow(ctx, query, uuid, user)
 	data := &entity.UserFile{}
 	err := row.Scan(&data.UUID, &data.Content, &data.CreatedAt, &data.CreatedBy)

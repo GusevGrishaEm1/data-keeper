@@ -24,7 +24,7 @@ func StartServer(context context.Context, config config.Config, logger *slog.Log
 	// key service
 	keyService := key.NewKeyService()
 	// auth service
-	authService, err := auth.NewAuthService(security_servicev1.NewAuthClient(conn), keyService)
+	authService, err := auth.NewAuthService(security_servicev1.NewAuthClient(conn), keyService, logger)
 	if err != nil {
 		return err
 	}
@@ -45,15 +45,17 @@ func StartServer(context context.Context, config config.Config, logger *slog.Log
 	// data repo
 	dataRepo := repo.NewDataRepo(db)
 	// card service
-	cardService := card.NewCardService(dataRepo, authService, keyService)
+	cardService := card.NewCardService(dataRepo, authService, keyService, slog.Default())
 	// card handler
 	cardHandler := handlers.NewCardHandler(cardService)
 
+	auth := echo.MiddlewareFunc(authMiddlewarer.AuthMiddleware)
+
 	// mapping handlers
-	e.POST("api/cards", cardHandler.CreateCard, echo.MiddlewareFunc(authMiddlewarer.AuthMiddleware))
-	e.PATCH("api/cards", cardHandler.UpdateCard, echo.MiddlewareFunc(authMiddlewarer.AuthMiddleware))
-	e.GET("api/cards", cardHandler.GetCardsByUser, echo.MiddlewareFunc(authMiddlewarer.AuthMiddleware))
-	e.DELETE("api/cards/:uuid", cardHandler.DeleteCard, echo.MiddlewareFunc(authMiddlewarer.AuthMiddleware))
+	e.POST("api/cards", cardHandler.CreateCard, auth)
+	e.PATCH("api/cards", cardHandler.UpdateCard, auth)
+	e.GET("api/cards", cardHandler.GetCardsByUser, auth)
+	e.DELETE("api/cards", cardHandler.DeleteCard, auth)
 
 	// user's files
 	userFileRepo := repo.NewUserFileRepo(db)
@@ -63,13 +65,16 @@ func StartServer(context context.Context, config config.Config, logger *slog.Log
 	fileHandler := handlers.NewFileHandler(fileService)
 
 	// mapping handlers
-	e.POST("api/files", fileHandler.UploadFile, echo.MiddlewareFunc(authMiddlewarer.AuthMiddleware))
-	e.DELETE("api/files/:uuid", fileHandler.DeleteFile, echo.MiddlewareFunc(authMiddlewarer.AuthMiddleware))
-	e.GET("api/files", fileHandler.GetAllFiles, echo.MiddlewareFunc(authMiddlewarer.AuthMiddleware))
-	e.GET("api/files/:uuid", fileHandler.DownloadFile, echo.MiddlewareFunc(authMiddlewarer.AuthMiddleware))
+	e.POST("api/files", fileHandler.UploadFile, auth)
+	e.DELETE("api/files", fileHandler.DeleteFile, auth)
+	e.GET("api/files", fileHandler.GetAllFiles, auth)
+	e.GET("api/files/:uuid", fileHandler.DownloadFile, auth)
 
 	logger.Info("server started")
-	e.Start(config.URL)
+	err = e.Start(config.Port)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

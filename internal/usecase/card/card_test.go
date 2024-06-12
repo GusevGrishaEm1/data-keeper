@@ -2,6 +2,7 @@ package card
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 
 	"github.com/GusevGrishaEm1/data-keeper/internal/entity"
@@ -67,7 +68,7 @@ func TestCreateCard(t *testing.T) {
 	mockAuthService := new(MockAuthService)
 	mockKeyService := new(MockKeyService)
 
-	service := NewCardService(mockRepo, mockAuthService, mockKeyService)
+	service := NewCardService(mockRepo, mockAuthService, mockKeyService, slog.Default())
 
 	mockAuthService.On("GetUserFromContext", mock.Anything).Return("user123", nil)
 	mockKeyService.On("GetKeyForUser", "user123").Return("1234567890123456", nil)

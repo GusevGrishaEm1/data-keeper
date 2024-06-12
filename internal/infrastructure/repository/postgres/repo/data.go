@@ -31,7 +31,7 @@ func (s *dataRepo) Insert(ctx context.Context, data entity.Data) error {
 
 // Delete delete data for user
 func (s *dataRepo) Delete(ctx context.Context, user string, uuid string) error {
-	query := `delete from "data" where uuid = $1 and created_by = $2`
+	query := `delete from "data" where uuid::text = $1 and created_by = $2`
 	_, err := s.DB.Exec(ctx, query, uuid, user)
 	return err
 }
@@ -41,14 +41,14 @@ func (s *dataRepo) Update(ctx context.Context, data entity.Data) error {
 	query := `
 	update "data" 
 	set content = $1
-	where uuid = $3 and created_by = $4 and content_type = $5`
+	where uuid::text = $2 and created_by = $3 and content_type = $4`
 	_, err := s.DB.Exec(ctx, query, data.Content, data.UUID, data.CreatedBy, data.ContentType)
 	return err
 }
 
 // Get data by user and content type
 func (s *dataRepo) GetByUser(ctx context.Context, user string, contentType entity.ContentType) ([]*entity.Data, error) {
-	query := `select uuid, content, content_type from "data" where created_by = $2 and content_type = $3`
+	query := `select uuid, content, content_type from "data" where created_by = $1 and content_type = $2`
 	rows, err := s.DB.Query(ctx, query, user, contentType)
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func (s *dataRepo) GetByUser(ctx context.Context, user string, contentType entit
 
 // Get data by user and content type and uuid
 func (s *dataRepo) GetByUUID(ctx context.Context, user string, uuid string, contentType entity.ContentType) (*entity.Data, error) {
-	query := `select uuid, content, content_type from "data" where created_by = $2 and uuid = $3 and content_type = $4`
+	query := `select uuid, content, content_type from "data" where created_by = $1 and uuid::text = $2 and content_type = $3`
 	row := s.DB.QueryRow(ctx, query, user, uuid, contentType)
 	data := &entity.Data{}
 	err := row.Scan(&data.UUID, &data.Content, &data.ContentType)

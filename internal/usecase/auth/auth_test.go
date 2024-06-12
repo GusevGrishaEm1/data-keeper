@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -54,7 +55,7 @@ func TestSignIn(t *testing.T) {
 	mockAuthClient := new(MockAuthClient)
 	mockKeyService := new(mockKeyService)
 
-	service, err := NewAuthService(mockAuthClient, mockKeyService)
+	service, err := NewAuthService(mockAuthClient, mockKeyService, slog.Default())
 	assert.NoError(t, err)
 
 	// Успешный вход
@@ -83,7 +84,7 @@ func TestSignUp(t *testing.T) {
 	mockAuthClient := new(MockAuthClient)
 	mockKeyService := new(mockKeyService)
 
-	service, err := NewAuthService(mockAuthClient, mockKeyService)
+	service, err := NewAuthService(mockAuthClient, mockKeyService, slog.Default())
 	assert.NoError(t, err)
 
 	// Успешная регистрация

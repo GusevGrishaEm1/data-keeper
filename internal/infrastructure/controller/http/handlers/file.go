@@ -26,7 +26,7 @@ type UploadFileResponse struct {
 }
 
 type DeleteFileRequest struct {
-	UUID string
+	UUID string `json:"uuid"`
 }
 
 type DeleteFileResponse struct {
@@ -67,7 +67,11 @@ func NewFileHandler(fileService FileService) *FileHandler {
 }
 
 func (h *FileHandler) UploadFile(c echo.Context) error {
-	ctx := c.Request().Context()
+	user := c.Get("User")
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, customerr.ToJson("unauthorized"))
+	}
+	ctx := context.WithValue(c.Request().Context(), "User", user)
 	file, err := c.FormFile("file")
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, customerr.ToJson(err.Error()))
@@ -102,11 +106,17 @@ func (h *FileHandler) UploadFile(c echo.Context) error {
 }
 
 func (h *FileHandler) DeleteFile(c echo.Context) error {
-	ctx := c.Request().Context()
-	uuid := c.Param("uuid")
-	req := DeleteFileRequest{UUID: uuid}
+	user := c.Get("User")
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, customerr.ToJson("unauthorized"))
+	}
+	ctx := context.WithValue(c.Request().Context(), "User", user)
+	req := new(DeleteFileRequest)
+	if err := c.Bind(req); err != nil {
+		return c.JSON(http.StatusBadRequest, customerr.ToJson(err.Error()))
+	}
 
-	res, err := h.fileService.DeleteFile(ctx, req)
+	res, err := h.fileService.DeleteFile(ctx, *req)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, customerr.ToJson(err.Error()))
 	}
@@ -115,7 +125,11 @@ func (h *FileHandler) DeleteFile(c echo.Context) error {
 }
 
 func (h *FileHandler) GetAllFiles(c echo.Context) error {
-	ctx := c.Request().Context()
+	user := c.Get("User")
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, customerr.ToJson("unauthorized"))
+	}
+	ctx := context.WithValue(c.Request().Context(), "User", user)
 	req := GetAllFilesRequest{}
 
 	res, err := h.fileService.GetAllFiles(ctx, req)
@@ -126,7 +140,11 @@ func (h *FileHandler) GetAllFiles(c echo.Context) error {
 }
 
 func (h *FileHandler) DownloadFile(c echo.Context) error {
-	ctx := c.Request().Context()
+	user := c.Get("User")
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, customerr.ToJson("unauthorized"))
+	}
+	ctx := context.WithValue(c.Request().Context(), "User", user)
 	uuid := c.Param("uuid")
 	req := DownloadFileRequest{UUID: uuid}
 

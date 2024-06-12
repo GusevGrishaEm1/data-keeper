@@ -3,6 +3,7 @@ package card
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"time"
 
 	"github.com/GusevGrishaEm1/data-keeper/internal/entity"
@@ -39,13 +40,15 @@ type cardService struct {
 	repo        DataRepo
 	authService AuthService
 	keyService  KeyService
+	logger      *slog.Logger
 }
 
-func NewCardService(repo DataRepo, authService AuthService, keyService KeyService) *cardService {
+func NewCardService(repo DataRepo, authService AuthService, keyService KeyService, slog *slog.Logger) *cardService {
 	return &cardService{
 		repo:        repo,
 		authService: authService,
 		keyService:  keyService,
+		logger:      slog,
 	}
 }
 
@@ -179,25 +182,30 @@ func (s *cardService) DeleteCard(ctx context.Context, r handlers.DeleteCardReque
 func (s *cardService) GetCardsByUser(ctx context.Context, r handlers.GetAllCardsRequest) (*handlers.GetAllCardsResponse, error) {
 	user, err := s.authService.GetUserFromContext(ctx)
 	if err != nil {
+		s.logger.Error(err.Error())
 		return nil, err
 	}
 	key, err := s.keyService.GetKeyForUser(user)
 	if err != nil {
+		s.logger.Error(err.Error())
 		return nil, err
 	}
 	cards, err := s.repo.GetByUser(ctx, user, entity.CARD)
 	if err != nil {
+		s.logger.Error(err.Error())
 		return nil, err
 	}
 	cardsItems := make([]handlers.GetAllCardsResponceItem, 0, len(cards))
 	for _, card := range cards {
 		decryptedContent, err := lib.Decrypt(key, card.Content)
 		if err != nil {
+			s.logger.Error(err.Error())
 			return nil, err
 		}
 		cardDB := &CardContent{}
 		err = json.Unmarshal(decryptedContent, cardDB)
 		if err != nil {
+			s.logger.Error(err.Error())
 			return nil, err
 		}
 		cardsItems = append(cardsItems, handlers.GetAllCardsResponceItem{
