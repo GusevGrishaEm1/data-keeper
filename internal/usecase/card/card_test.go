@@ -81,7 +81,7 @@ func TestCreateCard(t *testing.T) {
 		Expires: "12/25",
 	}
 
-	mockRepo.On("Insert", mock.Anything, mock.AnythingOfType("*entity.Data")).Return(nil)
+	mockRepo.On("Insert", mock.Anything, mock.AnythingOfType("entity.Data")).Return(nil)
 
 	response, err := service.CreateCard(context.Background(), request)
 

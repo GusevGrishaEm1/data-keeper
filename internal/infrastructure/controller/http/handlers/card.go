@@ -91,76 +91,60 @@ func NewCardHandler(cardService CardService) *CardHandler {
 
 // Create card
 func (h *CardHandler) CreateCard(c echo.Context) error {
-	user := c.Get("User")
-	if user == nil {
-		return c.JSON(http.StatusUnauthorized, customerr.ToJson("unauthorized"))
-	}
-	ctx := context.WithValue(c.Request().Context(), "User", user)
 	req := new(CreateCardRequest)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, customerr.ToJson(err.Error()))
 	}
 
-	res, err := h.cardService.CreateCard(ctx, *req)
+	res, err := h.cardService.CreateCard(c.Request().Context(), *req)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, customerr.ToJson(err.Error()))
 	}
+
 	return c.JSON(http.StatusCreated, res)
 }
 
 // Update card
 func (h *CardHandler) UpdateCard(c echo.Context) error {
-	user := c.Get("User")
-	if user == nil {
-		return c.JSON(http.StatusUnauthorized, customerr.ToJson("unauthorized"))
-	}
-	ctx := context.WithValue(c.Request().Context(), "User", user)
 	req := new(UpdateCardRequest)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, customerr.ToJson(err.Error()))
 	}
 
-	res, err := h.cardService.UpdateCard(ctx, *req)
+	res, err := h.cardService.UpdateCard(c.Request().Context(), *req)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, customerr.ToJson(err.Error()))
 	}
+
 	return c.JSON(http.StatusOK, res)
 }
 
 // Delete card
 func (h *CardHandler) DeleteCard(c echo.Context) error {
-	user := c.Get("User")
-	if user == nil {
-		return c.JSON(http.StatusUnauthorized, customerr.ToJson("unauthorized"))
-	}
-	ctx := context.WithValue(c.Request().Context(), "User", user)
 	req := new(DeleteCardRequest)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, customerr.ToJson(err.Error()))
 	}
 
-	res, err := h.cardService.DeleteCard(ctx, *req)
+	res, err := h.cardService.DeleteCard(c.Request().Context(), *req)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, customerr.ToJson(err.Error()))
 	}
+
 	return c.JSON(http.StatusOK, res)
 }
 
 // Get cards by user
 func (h *CardHandler) GetCardsByUser(c echo.Context) error {
-	user := c.Get("User")
-	if user == nil {
-		return c.JSON(http.StatusUnauthorized, customerr.ToJson("unauthorized"))
-	}
-	ctx := context.WithValue(c.Request().Context(), "User", user)
 	req := new(GetAllCardsRequest)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, customerr.ToJson(err.Error()))
 	}
 
-	res, err := h.cardService.GetCardsByUser(ctx, *req)
+	res, err := h.cardService.GetCardsByUser(c.Request().Context(), *req)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, customerr.ToJson(err.Error()))
 	}
+
 	return c.JSON(http.StatusOK, res)
 }

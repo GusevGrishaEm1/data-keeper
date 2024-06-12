@@ -9,15 +9,15 @@ import (
 	"github.com/labstack/echo"
 )
 
-// Сервис Аутентификации
+// AuthService Auth service interface
 type AuthService interface {
-	// Аутентификация
+	// SignIn Sign in
 	SignIn(ctx context.Context, r LoginRequest) (*LoginResponse, error)
-	// Регистрация
+	// SignUp Sign up
 	SignUp(ctx context.Context, r RegisterRequest) (*RegisterResponse, error)
 }
 
-// Запрос Аутентификации
+// Login request
 type LoginRequest struct {
 	// Email user
 	Email string `json:"email"`
@@ -27,12 +27,13 @@ type LoginRequest struct {
 	Key string `json:"key"`
 }
 
-// Ответ Аутентификации
+// Login response
 type LoginResponse struct {
+	// User token
 	Token string `json:"-"`
 }
 
-// Запрос Регистрации
+// Register request
 type RegisterRequest struct {
 	// Email user
 	Email string `json:"email"`
@@ -40,56 +41,62 @@ type RegisterRequest struct {
 	Password string `json:"password"`
 }
 
-// Ответ Регистрации
+// Register response
 type RegisterResponse struct {
+	// User token
 	Token string `json:"-"`
-	Key   string `json:"key"`
+	// User key
+	Key string `json:"key"`
 }
 
-// Обработчик Аутентификации
+// AuthHandler Auth handler
 type AuthHandler struct {
 	authService AuthService
 }
 
-// Создание Обработчика Аутентификации
+// NewAuthHandler Create new auth handler
 func NewAuthHandler(authService AuthService) *AuthHandler {
 	return &AuthHandler{authService: authService}
 }
 
-// Аутентификация
+// Authentication
 func (h *AuthHandler) Login(c echo.Context) error {
-	ctx := c.Request().Context()
 	req := new(LoginRequest)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, customerr.ToJson(err.Error()))
 	}
-	res, err := h.authService.SignIn(ctx, *req)
+
+	res, err := h.authService.SignIn(c.Request().Context(), *req)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, customerr.ToJson(err.Error()))
 	}
+
 	c.SetCookie(&http.Cookie{
 		Name:    "User",
 		Value:   res.Token,
 		Expires: time.Now().Add(24 * time.Hour),
 	})
+
 	return c.JSON(http.StatusOK, res)
 }
 
-// Регистрация
+// Registration
 func (h *AuthHandler) Register(c echo.Context) error {
-	ctx := c.Request().Context()
 	req := new(RegisterRequest)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, customerr.ToJson(err.Error()))
 	}
-	res, err := h.authService.SignUp(ctx, *req)
+
+	res, err := h.authService.SignUp(c.Request().Context(), *req)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, customerr.ToJson(err.Error()))
 	}
+
 	c.SetCookie(&http.Cookie{
 		Name:    "User",
 		Value:   res.Token,
 		Expires: time.Now().Add(24 * time.Hour),
 	})
+
 	return c.JSON(http.StatusOK, res)
 }

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/gavv/httpexpect/v2"
+	"github.com/google/uuid"
 	"github.com/labstack/echo"
 	"github.com/stretchr/testify/mock"
 )
@@ -60,7 +61,7 @@ func TestCreateCard(t *testing.T) {
 
 	client := httpexpect.Default(t, server.URL)
 
-	req := CreateCardRequest{
+	req := &CreateCardRequest{
 		Key:     "1234",
 		Number:  "1111222233334444",
 		CVV:     "123",
@@ -68,11 +69,11 @@ func TestCreateCard(t *testing.T) {
 		Expires: "12/25",
 	}
 
-	mockService.On("CreateCard", mock.Anything, req).Return(CreateCardResponse{UUID: "fac1b0c2-9b0b-11ec-9b6c-0a0027000001"}, nil)
+	uuid := uuid.New().String()
 
+	mockService.On("CreateCard", mock.Anything, *req).Return(&CreateCardResponse{UUID: uuid}, nil)
 	response := client.POST("/cards").WithJSON(req).Expect().Status(http.StatusCreated).JSON().Object()
-
-	response.ContainsKey("uuid").ContainsValue("fac1b0c2-9b0b-11ec-9b6c-0a0027000001")
+	response.ContainsKey("uuid").ContainsValue(uuid)
 
 	mockService.AssertExpectations(t)
 }
@@ -83,7 +84,7 @@ func TestUpdateCard(t *testing.T) {
 	mockService := new(mockCardService)
 	handler := NewCardHandler(mockService)
 
-	e.PATCH("/cards/:uuid", handler.UpdateCard)
+	e.PATCH("/cards", handler.UpdateCard)
 
 	server := httptest.NewServer(e)
 	defer server.Close()
@@ -96,8 +97,10 @@ func TestUpdateCard(t *testing.T) {
 	name := `Test Bank`
 	expires := `12/25`
 
+	uuid := uuid.New().String()
+
 	req := UpdateCardRequest{
-		UUID:    "fac1b0c2-9b0b-11ec-9b6c-0a0027000001",
+		UUID:    uuid,
 		Key:     &key,
 		Number:  &number,
 		CVV:     &cvv,
@@ -105,11 +108,11 @@ func TestUpdateCard(t *testing.T) {
 		Expires: &expires,
 	}
 
-	mockService.On("UpdateCard", mock.Anything, req).Return(&UpdateCardResponse{UUID: "fac1b0c2-9b0b-11ec-9b6c-0a0027000001"}, nil)
+	mockService.On("UpdateCard", mock.Anything, req).Return(&UpdateCardResponse{UUID: uuid}, nil)
 
-	response := client.PATCH("/cards/fac1b0c2-9b0b-11ec-9b6c-0a0027000001").WithJSON(req).Expect().Status(http.StatusOK).JSON().Object()
+	response := client.PATCH("/cards").WithJSON(req).Expect().Status(http.StatusOK).JSON().Object()
 
-	response.ContainsKey("uuid").ContainsValue("fac1b0c2-9b0b-11ec-9b6c-0a0027000001")
+	response.ContainsKey("uuid").ContainsValue(uuid)
 
 	mockService.AssertExpectations(t)
 }
@@ -120,20 +123,21 @@ func TestDeleteCard(t *testing.T) {
 	mockService := new(mockCardService)
 	handler := NewCardHandler(mockService)
 
-	e.DELETE("/cards/:uuid", handler.DeleteCard)
+	e.DELETE("/cards", handler.DeleteCard)
 
 	server := httptest.NewServer(e)
 	defer server.Close()
 
 	client := httpexpect.Default(t, server.URL)
+	uuid := uuid.New().String()
 
-	req := DeleteCardRequest{UUID: "fac1b0c2-9b0b-11ec-9b6c-0a0027000001"}
+	req := DeleteCardRequest{UUID: uuid}
 
-	mockService.On("DeleteCard", mock.Anything, req).Return(DeleteCardResponse{UUID: "fac1b0c2-9b0b-11ec-9b6c-0a0027000001"}, nil)
+	mockService.On("DeleteCard", mock.Anything, req).Return(&DeleteCardResponse{UUID: uuid}, nil)
 
-	response := client.DELETE("/cards/fac1b0c2-9b0b-11ec-9b6c-0a0027000001").WithJSON(req).Expect().Status(http.StatusOK).JSON().Object()
+	response := client.DELETE("/cards").WithJSON(req).Expect().Status(http.StatusOK).JSON().Object()
 
-	response.ContainsKey("uuid").ContainsValue("fac1b0c2-9b0b-11ec-9b6c-0a0027000001")
+	response.ContainsKey("uuid").ContainsValue(uuid)
 
 	mockService.AssertExpectations(t)
 }
@@ -164,7 +168,7 @@ func TestGetAllCards(t *testing.T) {
 		},
 	}
 
-	mockService.On("GetCardsByUser", mock.Anything, GetAllCardsRequest{}).Return(res, nil)
+	mockService.On("GetCardsByUser", mock.Anything, GetAllCardsRequest{}).Return(&res, nil)
 
 	response := client.GET("/cards").Expect().Status(http.StatusOK).JSON().Object()
 

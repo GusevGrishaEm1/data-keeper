@@ -13,52 +13,59 @@ import (
 	security_servicev1 "github.com/GusevGrishaEm1/protos/gen/go/security_service"
 )
 
-// MockAuthClient представляет фейковый клиент для тестов
-type MockAuthClient struct {
+// MockAuthClient mocks auth client
+type mockAuthClient struct {
 }
 
-func (m *MockAuthClient) Login(ctx context.Context, in *security_servicev1.LoginRequest, opts ...grpc.CallOption) (*security_servicev1.LoginResponse, error) {
+// Login mock
+func (m *mockAuthClient) Login(ctx context.Context, in *security_servicev1.LoginRequest, opts ...grpc.CallOption) (*security_servicev1.LoginResponse, error) {
 	if in.Email == "existing@example.com" && in.Password == "password" {
 		return &security_servicev1.LoginResponse{Token: "some_token"}, nil
 	}
 	return nil, errors.New("login failed")
 }
 
-func (m *MockAuthClient) Register(ctx context.Context, in *security_servicev1.RegisterRequest, opts ...grpc.CallOption) (*security_servicev1.RegisterResponse, error) {
+// Register mock
+func (m *mockAuthClient) Register(ctx context.Context, in *security_servicev1.RegisterRequest, opts ...grpc.CallOption) (*security_servicev1.RegisterResponse, error) {
 	if in.Email == "new@example.com" && in.Password == "password" {
 		return &security_servicev1.RegisterResponse{Token: "some_token"}, nil
 	}
 	return nil, errors.New("registration failed")
 }
 
-func (m *MockAuthClient) Refresh(ctx context.Context, in *security_servicev1.RefreshRequest, opts ...grpc.CallOption) (*security_servicev1.RefreshResponse, error) {
-	panic("implement me")
-}
-func (m *MockAuthClient) Logout(ctx context.Context, in *security_servicev1.LogoutRequest, opts ...grpc.CallOption) (*security_servicev1.LogoutResponse, error) {
+// Refresh mock
+func (m *mockAuthClient) Refresh(ctx context.Context, in *security_servicev1.RefreshRequest, opts ...grpc.CallOption) (*security_servicev1.RefreshResponse, error) {
 	panic("implement me")
 }
 
-// mockKeyService представляет фейковый сервис ключей для тестов
+// Logout mock
+func (m *mockAuthClient) Logout(ctx context.Context, in *security_servicev1.LogoutRequest, opts ...grpc.CallOption) (*security_servicev1.LogoutResponse, error) {
+	panic("implement me")
+}
+
+// KeyService mocks key service
 type mockKeyService struct {
 }
 
+// SetKeyForUser mock
 func (m *mockKeyService) SetKeyForUser(user string, key string) error {
 	return nil
 }
 
+// GenerateKey mock
 func (m *mockKeyService) GenerateKey() (string, error) {
 	return "some_key", nil
 }
 
 func TestSignIn(t *testing.T) {
 	ctx := context.Background()
-	mockAuthClient := new(MockAuthClient)
+	mockAuthClient := new(mockAuthClient)
 	mockKeyService := new(mockKeyService)
 
 	service, err := NewAuthService(mockAuthClient, mockKeyService, slog.Default())
 	assert.NoError(t, err)
 
-	// Успешный вход
+	// success login
 	request := handlers.LoginRequest{
 		Email:    "existing@example.com",
 		Password: "password",
@@ -69,7 +76,7 @@ func TestSignIn(t *testing.T) {
 	assert.NotNil(t, response)
 	assert.Equal(t, "some_token", response.Token)
 
-	// Неудачный вход
+	// error login
 	request = handlers.LoginRequest{
 		Email:    "nonexisting@example.com",
 		Password: "password",
@@ -81,13 +88,13 @@ func TestSignIn(t *testing.T) {
 
 func TestSignUp(t *testing.T) {
 	ctx := context.Background()
-	mockAuthClient := new(MockAuthClient)
+	mockAuthClient := new(mockAuthClient)
 	mockKeyService := new(mockKeyService)
 
 	service, err := NewAuthService(mockAuthClient, mockKeyService, slog.Default())
 	assert.NoError(t, err)
 
-	// Успешная регистрация
+	// success registration
 	request := handlers.RegisterRequest{
 		Email:    "new@example.com",
 		Password: "password",
@@ -97,7 +104,7 @@ func TestSignUp(t *testing.T) {
 	assert.NotNil(t, response)
 	assert.Equal(t, "some_token", response.Token)
 
-	// Неудачная регистрация
+	// failure registration
 	request = handlers.RegisterRequest{
 		Email:    "existing@example.com",
 		Password: "password",

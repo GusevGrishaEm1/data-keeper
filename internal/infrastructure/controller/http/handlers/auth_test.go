@@ -11,21 +11,22 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-type MockAuthService struct {
+// Mock service
+type mockAuthService struct {
 	mock.Mock
 }
 
-func (m *MockAuthService) SignIn(ctx context.Context, r LoginRequest) (*LoginResponse, error) {
+func (m *mockAuthService) SignIn(ctx context.Context, r LoginRequest) (*LoginResponse, error) {
 	args := m.Called(ctx, r)
 	return args.Get(0).(*LoginResponse), args.Error(1)
 }
 
-func (m *MockAuthService) SignUp(ctx context.Context, r RegisterRequest) (*RegisterResponse, error) {
+func (m *mockAuthService) SignUp(ctx context.Context, r RegisterRequest) (*RegisterResponse, error) {
 	args := m.Called(ctx, r)
 	return args.Get(0).(*RegisterResponse), args.Error(1)
 }
 
-func setupServer(mockAuthService *MockAuthService) *echo.Echo {
+func setupServer(mockAuthService *mockAuthService) *echo.Echo {
 	e := echo.New()
 	handler := NewAuthHandler(mockAuthService)
 
@@ -36,7 +37,7 @@ func setupServer(mockAuthService *MockAuthService) *echo.Echo {
 }
 
 func TestAuthHandler_Login(t *testing.T) {
-	mockAuthService := new(MockAuthService)
+	mockAuthService := new(mockAuthService)
 	loginRequest := LoginRequest{
 		Email:    "test@example.com",
 		Password: "password",
@@ -71,7 +72,7 @@ func TestAuthHandler_Login(t *testing.T) {
 }
 
 func TestAuthHandler_Register(t *testing.T) {
-	mockAuthService := new(MockAuthService)
+	mockAuthService := new(mockAuthService)
 	registerRequest := RegisterRequest{
 		Email:    "test@example.com",
 		Password: "password",

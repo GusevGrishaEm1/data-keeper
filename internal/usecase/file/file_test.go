@@ -203,8 +203,14 @@ func TestDownloadFile(t *testing.T) {
 	mockAuthService.On("GetUserFromContext", ctx).Return(user, nil)
 	mockKeyService.On("GetKeyForUser", user).Return(key, nil)
 
-	metadata := []byte("encrypted metadata content")
-	encryptedMetadata, err := lib.Encrypt(key, metadata)
+	metadata := FileContent{
+		Name:   "test-file",
+		Format: "txt",
+		Size:   10,
+	}
+	metadataJson, err := json.Marshal(metadata)
+	assert.NoError(t, err)
+	encryptedMetadata, err := lib.Encrypt(key, metadataJson)
 	assert.NoError(t, err)
 
 	data := entity.Data{
@@ -218,7 +224,6 @@ func TestDownloadFile(t *testing.T) {
 	mockDataRepo.On("GetByUUID", ctx, user, fileUUID, entity.FILE).Return(&data, nil)
 
 	fileContent := []byte("encrypted file content")
-
 	encryptedFileContent, err := lib.Encrypt(key, fileContent)
 	assert.NoError(t, err)
 

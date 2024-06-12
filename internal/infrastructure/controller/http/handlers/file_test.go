@@ -149,7 +149,9 @@ func TestFileHandler_DownloadFile(t *testing.T) {
 
 	expect := httpexpect.Default(t, server.URL)
 
-	expect.GET("/files/123").
+	muid := uuid.New().String()
+
+	expect.GET("/files/" + muid).
 		Expect().
 		Status(http.StatusOK).
 		HasContentType("application/octet-stream").
