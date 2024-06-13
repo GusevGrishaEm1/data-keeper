@@ -1,8 +1,0 @@
-port: :8081
-https: false
-postgres_db:
-  url: postgres://datakeeper:datakeeper@localhost:5432/datakeeper?sslmode=disable
-auth_service:
-  url: 127.0.0.1:8080
-  timeout: 5
-  jwt_key: secret

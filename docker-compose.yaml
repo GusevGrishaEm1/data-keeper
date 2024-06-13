@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - postgres
+      - auth
+    environment:
+      - DB_URL=postgres://datakeeper:datakeeper@postgres/datakeeper
+      - AUTH_URL=auth
+
+  postgres:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=datakeeper
+      - POSTGRES_PASSWORD=datakeeper
+      - POSTGRES_DB=datakeeper
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  auth:
+    image: security-service
+    ports:
+      - "8080:8080"
+volumes:
+  dind-certs:
+  pgdata:

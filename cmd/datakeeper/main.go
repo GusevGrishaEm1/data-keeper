@@ -3,13 +3,14 @@ package main
 import (
 	"context"
 	"database/sql"
+	"flag"
 	"log/slog"
 	"os"
 	"time"
 
-	"github.com/GusevGrishaEm1/data-keeper/internal/config"
-	"github.com/GusevGrishaEm1/data-keeper/internal/infrastructure/controller/http"
-	"github.com/GusevGrishaEm1/data-keeper/internal/infrastructure/repository/postgres"
+	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/config"
+	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/infrastructure/controller/http"
+	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/infrastructure/repository/postgres"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
@@ -18,16 +19,19 @@ import (
 )
 
 func main() {
-	config, err := config.LoadConfig("./config/dev.yaml")
+	var path string
+	flag.StringVar(&path, "config", "", "path to config file")
+	flag.Parse()
+	config, err := config.LoadConfig(path)
 	if err != nil {
 		panic(err)
 	}
 	ctx := context.Background()
 	// auth service client
 	authconn, err := grpc.NewClient(
-		config.AuthService.URL,
+		config.URLAUTH,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithIdleTimeout(5*time.Second),
+		grpc.WithIdleTimeout(time.Duration(config.AuthService.Timeout)*time.Second),
 	)
 	if err != nil {
 		panic(err)
@@ -37,7 +41,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	dbMig, err := sql.Open("pgx", config.PostgresDB.URL)
+	dbMig, err := sql.Open("pgx", config.URLDB)
 	if err != nil {
 		panic(err)
 	}
