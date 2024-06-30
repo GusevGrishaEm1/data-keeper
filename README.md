@@ -1,2 +1,2 @@
 # data-keeper
-Store user's data (login/password, card, txt, binary)
+Store user's data (login/password, txt/binary files)
