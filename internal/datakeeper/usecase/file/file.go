@@ -17,10 +17,10 @@ type Content struct {
 	Size   int    `json:"size"`
 }
 
-type ContentRepo interface {
-	Insert(ctx context.Context, data entity.UserFile) error
+type RepoFile interface {
+	Insert(ctx context.Context, data entity.FileRepo) error
 	Delete(ctx context.Context, user string, uuid string) error
-	GetByUUID(ctx context.Context, user string, uuid string) (*entity.UserFile, error)
+	GetByUUID(ctx context.Context, user string, uuid string) (*entity.FileRepo, error)
 }
 
 type Repo interface {
@@ -40,22 +40,22 @@ type KeyService interface {
 }
 
 type CardService struct {
-	dataRepo     Repo
-	userFileRepo ContentRepo
-	authService  AuthService
-	keyService   KeyService
+	dataRepo    Repo
+	fileRepo    RepoFile
+	authService AuthService
+	keyService  KeyService
 }
 
-func NewFileService(dataRepo Repo, userFileRepo ContentRepo, authService AuthService, keyService KeyService) *CardService {
+func NewFileService(dataRepo Repo, fileRepo RepoFile, authService AuthService, keyService KeyService) *CardService {
 	return &CardService{
-		dataRepo:     dataRepo,
-		userFileRepo: userFileRepo,
-		authService:  authService,
-		keyService:   keyService,
+		dataRepo:    dataRepo,
+		fileRepo:    fileRepo,
+		authService: authService,
+		keyService:  keyService,
 	}
 }
 
-// Upload file
+// UploadFile Upload file
 func (s *CardService) UploadFile(ctx context.Context, r handlers.UploadFileRequest) (*handlers.UploadFileResponse, error) {
 	user, err := s.authService.GetUserFromContext(ctx)
 	if err != nil {
@@ -102,7 +102,7 @@ func (s *CardService) UploadFile(ctx context.Context, r handlers.UploadFileReque
 		return nil, err
 	}
 
-	err = s.userFileRepo.Insert(ctx, entity.UserFile{
+	err = s.fileRepo.Insert(ctx, entity.FileRepo{
 		UUID:      data.UUID,
 		Content:   encryptedContent,
 		CreatedAt: data.CreatedAt,
@@ -115,6 +115,7 @@ func (s *CardService) UploadFile(ctx context.Context, r handlers.UploadFileReque
 	return &handlers.UploadFileResponse{UUID: data.UUID}, nil
 }
 
+// DeleteFile delete file
 func (s *CardService) DeleteFile(ctx context.Context, r handlers.DeleteFileRequest) (*handlers.DeleteFileResponse, error) {
 	user, err := s.authService.GetUserFromContext(ctx)
 	if err != nil {
@@ -126,13 +127,14 @@ func (s *CardService) DeleteFile(ctx context.Context, r handlers.DeleteFileReque
 		return nil, err
 	}
 
-	if err = s.userFileRepo.Delete(ctx, user, r.UUID); err != nil {
+	if err = s.fileRepo.Delete(ctx, user, r.UUID); err != nil {
 		return nil, err
 	}
 
 	return &handlers.DeleteFileResponse{UUID: r.UUID}, nil
 }
 
+// GetAllFiles get all files for user
 func (s *CardService) GetAllFiles(ctx context.Context, r handlers.GetAllFilesRequest) (*handlers.GetAllFilesResponse, error) {
 	user, err := s.authService.GetUserFromContext(ctx)
 	if err != nil {
@@ -171,6 +173,7 @@ func (s *CardService) GetAllFiles(ctx context.Context, r handlers.GetAllFilesReq
 	return &handlers.GetAllFilesResponse{Items: items}, nil
 }
 
+// DownloadFile download file
 func (s *CardService) DownloadFile(ctx context.Context, r handlers.DownloadFileRequest) (*handlers.DownloadFileResponse, error) {
 	user, err := s.authService.GetUserFromContext(ctx)
 	if err != nil {
@@ -198,7 +201,7 @@ func (s *CardService) DownloadFile(ctx context.Context, r handlers.DownloadFileR
 		return nil, err
 	}
 
-	fileContent, err := s.userFileRepo.GetByUUID(ctx, user, data.UUID)
+	fileContent, err := s.fileRepo.GetByUUID(ctx, user, data.UUID)
 	if err != nil {
 		return nil, err
 	}

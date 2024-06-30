@@ -48,7 +48,7 @@ type mockUserFileRepo struct {
 	mock.Mock
 }
 
-func (m *mockUserFileRepo) Insert(ctx context.Context, data entity.UserFile) error {
+func (m *mockUserFileRepo) Insert(ctx context.Context, data entity.FileRepo) error {
 	args := m.Called(ctx, data)
 	return args.Error(0)
 }
@@ -58,9 +58,9 @@ func (m *mockUserFileRepo) Delete(ctx context.Context, user string, uuid string)
 	return args.Error(0)
 }
 
-func (m *mockUserFileRepo) GetByUUID(ctx context.Context, user string, uuid string) (*entity.UserFile, error) {
+func (m *mockUserFileRepo) GetByUUID(ctx context.Context, user string, uuid string) (*entity.FileRepo, error) {
 	args := m.Called(ctx, user, uuid)
-	return args.Get(0).(*entity.UserFile), args.Error(1)
+	return args.Get(0).(*entity.FileRepo), args.Error(1)
 }
 
 type mockAuthService struct {
@@ -100,7 +100,7 @@ func TestUploadFile(t *testing.T) {
 
 	mockDataRepo.On("Insert", ctx, mock.AnythingOfType("entity.Data")).Return(nil)
 
-	mockUserFileRepo.On("Insert", ctx, mock.AnythingOfType("entity.UserFile")).Return(nil)
+	mockUserFileRepo.On("Insert", ctx, mock.AnythingOfType("entity.FileRepo")).Return(nil)
 
 	req := handlers.UploadFileRequest{
 		Name:   "test-file",
@@ -227,7 +227,7 @@ func TestDownloadFile(t *testing.T) {
 	encryptedFileContent, err := lib.Encrypt(key, fileContent)
 	assert.NoError(t, err)
 
-	file := entity.UserFile{
+	file := entity.FileRepo{
 		UUID:      fileUUID,
 		Content:   encryptedFileContent,
 		CreatedAt: time.Now(),

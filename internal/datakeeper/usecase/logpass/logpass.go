@@ -39,8 +39,8 @@ type Service struct {
 	authService AuthService
 }
 
-func NewLogPassService(repo Repo, keyService KeyService) *Service {
-	return &Service{repo: repo, keyService: keyService}
+func NewLogPassService(repo Repo, keyService KeyService, authService AuthService) *Service {
+	return &Service{repo: repo, keyService: keyService, authService: authService}
 }
 
 // Create log/pass
@@ -116,12 +116,12 @@ func (s *Service) Update(ctx context.Context, r handlers.UpdateLogPassRequest) (
 		return nil, err
 	}
 
-	jsonEncypted, err := lib.Encrypt(key, jsonData)
+	jsonEncrypted, err := lib.Encrypt(key, jsonData)
 	if err != nil {
 		return nil, err
 	}
 
-	fromDB.Content = jsonEncypted
+	fromDB.Content = jsonEncrypted
 
 	err = s.repo.Update(ctx, *fromDB)
 	if err != nil {
@@ -183,6 +183,7 @@ func (s *Service) GetAll(ctx context.Context, r handlers.GetAllLogPassesRequest)
 		}
 		item := handlers.GetAllLogPassResponseItem{}
 		err = json.Unmarshal(jsonDecrypted, &item)
+		item.UUID = v.UUID
 		if err != nil {
 			return nil, err
 		}

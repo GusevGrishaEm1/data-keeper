@@ -38,6 +38,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	logger := logger()
+
+	postgresURL := fmt.Sprintf(
+		"postgres://%s:%s@%s:%d/%s",
+		c.Postgres.User, c.Postgres.Password, c.Postgres.Host, c.Postgres.Port, c.Postgres.DB,
+	)
+	logger.Info("postgres URL: " + postgresURL)
 
 	// postgres db
 	db, err := postgres.NewPostgresDB(ctx, *c)
@@ -52,7 +59,7 @@ func main() {
 	}
 
 	// start server
-	err = http.StartServer(ctx, *c, logger(), authn, db)
+	err = http.StartServer(*c, logger, authn, db)
 	if err != nil {
 		panic(err)
 	}

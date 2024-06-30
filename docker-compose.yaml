@@ -18,7 +18,11 @@ services:
       - HTTPS=${HTTPS}
       - POSTGRES_HOST=${POSTGRES_HOST}
       - POSTGRES_PORT=${POSTGRES_PORT}
-      - AUTH_URL=${AUTH_HOST}:${AUTH_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - AUTH_HOST=${AUTH_HOST}
+      - AUTH_PORT=${AUTH_PORT}
       - AUTH_TIMEOUT=${AUTH_TIMEOUT}
       - AUTH_JWT_KEY=${AUTH_JWT_KEY}
   postgres:
@@ -33,7 +37,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
   auth:
-    image: security-service
+    image: grishaem1/userapp:latest
     ports:
       - "50051:50051"  # gRPC port
 volumes:

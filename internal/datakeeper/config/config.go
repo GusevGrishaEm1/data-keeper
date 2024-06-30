@@ -12,7 +12,7 @@ import (
 // Config file
 type Config struct {
 	// Port service port
-	Port string
+	Port int
 	// HTTPS is secure http
 	HTTPS bool
 	// Postgres postgres config
@@ -44,13 +44,13 @@ func LoadConfig() (*Config, error) {
 	_ = godotenv.Load()
 
 	// Define flags
-	port := flag.String("port", getEnv("PORT", "8080"), "service port")
+	port := flag.Int("port", getEnvAsInt("PORT", 8080), "service port")
 	https := flag.Bool("https", getEnvAsBool("HTTPS", false), "enable HTTPS")
 	postgresHost := flag.String("postgres_host", getEnv("POSTGRES_HOST", "localhost"), "Postgres host")
 	postgresPort := flag.Int("postgres_port", getEnvAsInt("POSTGRES_PORT", 5432), "Postgres port")
 	postgresDB := flag.String("postgres_db", getEnv("POSTGRES_DB", "postgres"), "Postgres database")
 	postgresUser := flag.String("postgres_user", getEnv("POSTGRES_USER", "postgres"), "Postgres user")
-	postgresPassword := flag.String("postgres_password", "", "Postgres password")
+	postgresPassword := flag.String("postgres_password", getEnv("POSTGRES_PASSWORD", ""), "Postgres password")
 	authHost := flag.String("auth_host", getEnv("AUTH_HOST", "localhost"), "Auth host")
 	authPort := flag.Int("auth_port", getEnvAsInt("AUTH_PORT", 50051), "Auth port")
 	authTimeout := flag.Duration("auth_timeout", getEnvAsDuration("AUTH_TIMEOUT", 30*time.Second), "Auth service timeout")

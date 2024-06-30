@@ -1,9 +1,6 @@
 package http
 
 import (
-	"context"
-	"log/slog"
-
 	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/config"
 	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/infrastructure/controller/http/handlers"
 	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/infrastructure/controller/http/middlewares"
@@ -14,12 +11,13 @@ import (
 	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/usecase/key"
 	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/usecase/logpass"
 	securityservicev1 "github.com/GusevGrishaEm1/protos/gen/go/security_service"
-	"google.golang.org/grpc"
-
 	"github.com/labstack/echo"
+	"google.golang.org/grpc"
+	"log/slog"
+	"strconv"
 )
 
-func StartServer(context context.Context, config config.Config, logger *slog.Logger, conn *grpc.ClientConn, db *postgres.DB) error {
+func StartServer(config config.Config, logger *slog.Logger, conn *grpc.ClientConn, db *postgres.DB) error {
 	e := echo.New()
 
 	groupAPI := e.Group("/api")
@@ -50,7 +48,7 @@ func StartServer(context context.Context, config config.Config, logger *slog.Log
 	dataRepo := repo.NewDataRepo(db)
 
 	// log/pass service
-	logPassService := logpass.NewLogPassService(dataRepo, keyService)
+	logPassService := logpass.NewLogPassService(dataRepo, keyService, authService)
 	// converter echo.Context -> context.Context
 	ctxConverter := handlers.NewCtxConverter()
 	// log/pass handler
@@ -65,9 +63,9 @@ func StartServer(context context.Context, config config.Config, logger *slog.Log
 	groupLogPass.DELETE("", logPassHandler.DeleteLogPass)
 
 	// user's files repo
-	userFileRepo := repo.NewUserFileRepo(db)
+	fileRepo := repo.NewFileRepo(db)
 	// file service
-	fileService := file.NewFileService(dataRepo, userFileRepo, authService, keyService)
+	fileService := file.NewFileService(dataRepo, fileRepo, authService, keyService)
 	// file handler
 	fileHandler := handlers.NewFileHandler(fileService, ctxConverter)
 
@@ -80,7 +78,7 @@ func StartServer(context context.Context, config config.Config, logger *slog.Log
 	groupFile.GET("/:uuid", fileHandler.DownloadFile)
 
 	logger.Info("server started")
-	err = e.Start(config.Port)
+	err = e.Start(":" + strconv.Itoa(config.Port))
 	if err != nil {
 		return err
 	}

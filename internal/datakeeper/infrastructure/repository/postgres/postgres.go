@@ -14,7 +14,7 @@ type DB struct {
 
 func NewPostgresDB(ctx context.Context, c config.Config) (*DB, error) {
 	postgresURL := fmt.Sprintf(
-		"postgresql://%s:%s@%s:%d/%s",
+		"postgres://%s:%s@%s:%d/%s",
 		c.Postgres.User, c.Postgres.Password, c.Postgres.Host, c.Postgres.Port, c.Postgres.DB,
 	)
 	configPool, err := pgxpool.ParseConfig(postgresURL)

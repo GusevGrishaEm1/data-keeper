@@ -7,15 +7,15 @@ import (
 	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/infrastructure/repository/postgres"
 )
 
-type UserFileRepo struct {
+type FileRepo struct {
 	db *postgres.DB
 }
 
-func NewUserFileRepo(db *postgres.DB) *UserFileRepo {
-	return &UserFileRepo{db}
+func NewFileRepo(db *postgres.DB) *FileRepo {
+	return &FileRepo{db}
 }
 
-func (s *UserFileRepo) Insert(ctx context.Context, data entity.UserFile) error {
+func (s *FileRepo) Insert(ctx context.Context, data entity.FileRepo) error {
 	query := `
 	insert into file_repository (uuid, content, created_at, created_by)
 	values ($1, $2, $3, $4)`
@@ -23,7 +23,7 @@ func (s *UserFileRepo) Insert(ctx context.Context, data entity.UserFile) error {
 	return err
 }
 
-func (s *UserFileRepo) Delete(ctx context.Context, user string, uuid string) error {
+func (s *FileRepo) Delete(ctx context.Context, user string, uuid string) error {
 	query := `
 	delete from file_repository
     where uuid::text = $1 and created_by = $2`
@@ -31,13 +31,13 @@ func (s *UserFileRepo) Delete(ctx context.Context, user string, uuid string) err
 	return err
 }
 
-func (s *UserFileRepo) GetByUUID(ctx context.Context, user string, uuid string) (*entity.UserFile, error) {
+func (s *FileRepo) GetByUUID(ctx context.Context, user string, uuid string) (*entity.FileRepo, error) {
 	query := `
 	select uuid, content, created_at, created_by
 	from file_repository
 	where uuid::text = $1 and created_by = $2`
 	row := s.db.DB.QueryRow(ctx, query, uuid, user)
-	data := &entity.UserFile{}
+	data := &entity.FileRepo{}
 	err := row.Scan(&data.UUID, &data.Content, &data.CreatedAt, &data.CreatedBy)
 	return data, err
 }

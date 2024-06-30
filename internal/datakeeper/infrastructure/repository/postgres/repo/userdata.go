@@ -75,11 +75,11 @@ func (s *DataRepo) GetByUser(ctx context.Context, user string, contentType entit
 // GetByUUID Get data by user and content type and uuid
 func (s *DataRepo) GetByUUID(ctx context.Context, user string, uuid string) (*entity.Data, error) {
 	query := `
-	select uuid, content, content_type
+	select uuid, content, content_type, created_by
 	from user_data
-    where created_by = $1 and uuid::text = $2 and content_type = $3`
+    where created_by = $1 and uuid::text = $2`
 	row := s.db.DB.QueryRow(ctx, query, user, uuid)
 	data := &entity.Data{}
-	err := row.Scan(&data.UUID, &data.Content, &data.ContentType)
+	err := row.Scan(&data.UUID, &data.Content, &data.ContentType, &data.CreatedBy)
 	return data, err
 }

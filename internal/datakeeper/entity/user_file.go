@@ -2,8 +2,8 @@ package entity
 
 import "time"
 
-// UserFile stored file
-type UserFile struct {
+// FileRepo stored file
+type FileRepo struct {
 	// UUID
 	UUID string
 	// File content
