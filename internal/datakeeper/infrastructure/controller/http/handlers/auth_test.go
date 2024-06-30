@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -10,21 +9,6 @@ import (
 	"github.com/labstack/echo"
 	"github.com/stretchr/testify/mock"
 )
-
-// Mock service
-type mockAuthService struct {
-	mock.Mock
-}
-
-func (m *mockAuthService) SignIn(ctx context.Context, r LoginRequest) (*LoginResponse, error) {
-	args := m.Called(ctx, r)
-	return args.Get(0).(*LoginResponse), args.Error(1)
-}
-
-func (m *mockAuthService) SignUp(ctx context.Context, r RegisterRequest) (*RegisterResponse, error) {
-	args := m.Called(ctx, r)
-	return args.Get(0).(*RegisterResponse), args.Error(1)
-}
 
 func setupServer(mockAuthService *mockAuthService) *echo.Echo {
 	e := echo.New()

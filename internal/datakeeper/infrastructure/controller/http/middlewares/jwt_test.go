@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/config"
-	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/entity"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo"
 	"github.com/stretchr/testify/assert"
@@ -78,7 +77,7 @@ func TestAuthMiddleware(t *testing.T) {
 		c := e.NewContext(req, rec)
 
 		handler := authMiddleware.AuthMiddleware(func(c echo.Context) error {
-			user, ok := c.Request().Context().Value(entity.USER_EMAIL).(string)
+			user, ok := c.Get("User").(string)
 			if !ok {
 				return c.String(http.StatusInternalServerError, "user not found")
 			}

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,43 +11,24 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-type mockLogPassService struct {
-	mock.Mock
-}
-
-func (m *mockLogPassService) CreateLogPass(ctx context.Context, r CreateLogPassRequest) (*CreateLogPassResponse, error) {
-	args := m.Called(ctx, r)
-	return args.Get(0).(*CreateLogPassResponse), args.Error(1)
-}
-
-func (m *mockLogPassService) UpdateLogPass(ctx context.Context, r UpdateLogPassRequest) (*UpdateLogPassResponse, error) {
-	args := m.Called(ctx, r)
-	return args.Get(0).(*UpdateLogPassResponse), args.Error(1)
-}
-
-func (m *mockLogPassService) DeleteLogPass(ctx context.Context, r DeleteLogPassRequest) (*DeleteLogPassResponse, error) {
-	args := m.Called(ctx, r)
-	return args.Get(0).(*DeleteLogPassResponse), args.Error(1)
-}
-
-func (m *mockLogPassService) GetAllLogPasses(ctx context.Context, r GetAllLogPassesRequest) (*GetAllLogPassesResponse, error) {
-	args := m.Called(ctx, r)
-	return args.Get(0).(*GetAllLogPassesResponse), args.Error(1)
-}
-
 func TestCreateLogPass(t *testing.T) {
 	mockService := new(mockLogPassService)
-	handler := NewLogPassHandler(mockService)
+	mockConverter := new(mockCtxConverter)
+	handler := NewLogPassHandler(mockService, mockConverter)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		handler.CreateLogPass(echo.New().NewContext(r, w))
+		err := handler.CreateLogPass(echo.New().NewContext(r, w))
+		if err != nil {
+			return
+		}
 	}))
 	defer server.Close()
 
 	e := httpexpect.Default(t, server.URL)
-	uuid := uuid.NewString()
-	expectedResponse := &CreateLogPassResponse{UUID: uuid}
-	mockService.On("CreateLogPass", mock.Anything, mock.Anything).Return(expectedResponse, nil)
+	uuidStr := uuid.NewString()
+	expectedResponse := &CreateLogPassResponse{UUID: uuidStr}
+	mockConverter.On("ConvertEchoCtxToCtx", mock.Anything).Return(nil, nil)
+	mockService.On("Create", mock.Anything, mock.Anything).Return(expectedResponse, nil)
 
 	reqBody := map[string]string{
 		"name":     "test",
@@ -56,12 +36,13 @@ func TestCreateLogPass(t *testing.T) {
 		"password": "pass",
 	}
 
-	e.POST("/create").
+	e.POST("/logpass").
 		WithJSON(reqBody).
 		Expect().
 		Status(http.StatusCreated).
 		JSON().Object().
-		HasValue("uuid", uuid)
+		HasValue("uuid", uuidStr)
 
 	mockService.AssertExpectations(t)
+	mockConverter.AssertExpectations(t)
 }

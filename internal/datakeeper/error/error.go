@@ -2,10 +2,6 @@ package customerr
 
 import "errors"
 
-// Messages for error
-const USER_NOT_FOUND = "user not found"
-const INVALID_ID = "invalid id"
-const NO_AUTH_HEADER = "no authorization header"
 const INVALID_TOKEN = "invalid token"
 const NO_USER_IN_CONTEXT = "no user in context"
 const NO_KEY_IN_CONTEXT = "no key in context"

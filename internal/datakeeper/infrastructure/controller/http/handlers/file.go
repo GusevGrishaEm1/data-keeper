@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"mime/multipart"
 	"net/http"
 	"strings"
 
@@ -9,49 +10,49 @@ import (
 	"github.com/labstack/echo"
 )
 
-// File service
+// FileService File service
 type FileService interface {
-	// Upload file
+	// UploadFile Upload file
 	UploadFile(ctx context.Context, r UploadFileRequest) (*UploadFileResponse, error)
-	// Delete file
+	// DeleteFile Delete file
 	DeleteFile(ctx context.Context, r DeleteFileRequest) (*DeleteFileResponse, error)
-	// Get all files
+	// GetAllFiles Get all files for user
 	GetAllFiles(ctx context.Context, r GetAllFilesRequest) (*GetAllFilesResponse, error)
-	// Download file
+	// DownloadFile Download file
 	DownloadFile(ctx context.Context, r DownloadFileRequest) (*DownloadFileResponse, error)
 }
 
-// Upload file request
+// UploadFileRequest Upload file request
 type UploadFileRequest struct {
 	Name   string
 	Format string
 	File   []byte
 }
 
-// Upload file response
+// UploadFileResponse Upload file response
 type UploadFileResponse struct {
 	UUID string `json:"uuid"`
 }
 
-// Delete file request
+// DeleteFileRequest Delete file request
 type DeleteFileRequest struct {
 	UUID string `json:"uuid"`
 }
 
-// Delete file response
+// DeleteFileResponse Delete file response
 type DeleteFileResponse struct {
 	UUID string `json:"uuid"`
 }
 
-// Get all files request
+// GetAllFilesRequest Get all files request
 type GetAllFilesRequest struct{}
 
-// Get all files response
+// GetAllFilesResponse Get all files response
 type GetAllFilesResponse struct {
 	Items []GetAllFilesResponceItem `json:"items"`
 }
 
-// Get all files responce item
+// GetAllFilesResponceItem Get all files responce item
 type GetAllFilesResponceItem struct {
 	UUID   string `json:"uuid"`
 	Name   string `json:"name"`
@@ -59,26 +60,27 @@ type GetAllFilesResponceItem struct {
 	Size   int    `json:"size"`
 }
 
-// Download file request
+// DownloadFileRequest Download file request
 type DownloadFileRequest struct {
-	UUID string
+	UUID string `json:"uuid"`
 }
 
-// Download file response
+// DownloadFileResponse Download file response
 type DownloadFileResponse struct {
 	Name   string
 	Format string
 	File   []byte
 }
 
-// File handler
+// FileHandler File handler
 type FileHandler struct {
-	fileService FileService
+	fileService  FileService
+	ctxConverter ctxConverter
 }
 
 // NewFileHandler create new file handler
-func NewFileHandler(fileService FileService) *FileHandler {
-	return &FileHandler{fileService: fileService}
+func NewFileHandler(fileService FileService, ctxConverter ctxConverter) *FileHandler {
+	return &FileHandler{fileService: fileService, ctxConverter: ctxConverter}
 }
 
 // UploadFile upload file for user
@@ -92,7 +94,11 @@ func (h *FileHandler) UploadFile(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, customerr.ToJson(err.Error()))
 	}
-	defer src.Close()
+	defer func(src multipart.File) {
+		err := src.Close()
+		if err != nil {
+		}
+	}(src)
 
 	if file.Size > 5*1024*1024 {
 		return c.JSON(http.StatusBadRequest, customerr.ToJson("File is too large"))
@@ -104,9 +110,14 @@ func (h *FileHandler) UploadFile(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, customerr.ToJson(err.Error()))
 	}
 
+	ctx, err := h.ctxConverter.ConvertEchoCtxToCtx(c)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, customerr.ToJson(err.Error()))
+	}
+
 	strs := strings.Split(file.Filename, ".")
 	req := UploadFileRequest{Name: strs[0], Format: strs[1], File: buf}
-	res, err := h.fileService.UploadFile(c.Request().Context(), req)
+	res, err := h.fileService.UploadFile(ctx, req)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, customerr.ToJson(err.Error()))
 	}
@@ -121,7 +132,12 @@ func (h *FileHandler) DeleteFile(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, customerr.ToJson(err.Error()))
 	}
 
-	res, err := h.fileService.DeleteFile(c.Request().Context(), *req)
+	ctx, err := h.ctxConverter.ConvertEchoCtxToCtx(c)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, customerr.ToJson(err.Error()))
+	}
+
+	res, err := h.fileService.DeleteFile(ctx, *req)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, customerr.ToJson(err.Error()))
 	}
@@ -131,7 +147,12 @@ func (h *FileHandler) DeleteFile(c echo.Context) error {
 
 // GetAllFiles get all files for user
 func (h *FileHandler) GetAllFiles(c echo.Context) error {
-	res, err := h.fileService.GetAllFiles(c.Request().Context(), GetAllFilesRequest{})
+	ctx, err := h.ctxConverter.ConvertEchoCtxToCtx(c)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, customerr.ToJson(err.Error()))
+	}
+
+	res, err := h.fileService.GetAllFiles(ctx, GetAllFilesRequest{})
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, customerr.ToJson(err.Error()))
 	}
@@ -139,11 +160,19 @@ func (h *FileHandler) GetAllFiles(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
-// DownloadFile downloads file for user
+// DownloadFile download file for user
 func (h *FileHandler) DownloadFile(c echo.Context) error {
-	uuid := c.Param("uuid")
+	req := new(DownloadFileRequest)
+	if err := c.Bind(req); err != nil {
+		return c.JSON(http.StatusBadRequest, customerr.ToJson(err.Error()))
+	}
 
-	res, err := h.fileService.DownloadFile(c.Request().Context(), DownloadFileRequest{UUID: uuid})
+	ctx, err := h.ctxConverter.ConvertEchoCtxToCtx(c)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, customerr.ToJson(err.Error()))
+	}
+
+	res, err := h.fileService.DownloadFile(ctx, *req)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, customerr.ToJson(err.Error()))
 	}

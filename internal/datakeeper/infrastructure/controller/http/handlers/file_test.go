@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"github.com/stretchr/testify/require"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -14,36 +15,13 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-type MockFileService struct {
-	mock.Mock
-}
-
-func (m *MockFileService) UploadFile(ctx context.Context, r UploadFileRequest) (*UploadFileResponse, error) {
-	args := m.Called(ctx, r)
-	return args.Get(0).(*UploadFileResponse), args.Error(1)
-}
-
-func (m *MockFileService) DeleteFile(ctx context.Context, r DeleteFileRequest) (*DeleteFileResponse, error) {
-	args := m.Called(ctx, r)
-	return args.Get(0).(*DeleteFileResponse), args.Error(1)
-}
-
-func (m *MockFileService) GetAllFiles(ctx context.Context, r GetAllFilesRequest) (*GetAllFilesResponse, error) {
-	args := m.Called(ctx, r)
-	return args.Get(0).(*GetAllFilesResponse), args.Error(1)
-}
-
-func (m *MockFileService) DownloadFile(ctx context.Context, r DownloadFileRequest) (*DownloadFileResponse, error) {
-	args := m.Called(ctx, r)
-	return args.Get(0).(*DownloadFileResponse), args.Error(1)
-}
-
-func setupFileServer(mockFileService *MockFileService) *echo.Echo {
+func setupFileServer(mockFileService *mockFileService, mockConverter *mockCtxConverter) *echo.Echo {
 	e := echo.New()
-	handler := NewFileHandler(mockFileService)
 
-	e.POST("/upload", handler.UploadFile)
-	e.DELETE("/files/:uuid", handler.DeleteFile)
+	handler := NewFileHandler(mockFileService, mockConverter)
+
+	e.POST("/files", handler.UploadFile)
+	e.DELETE("/files", handler.DeleteFile)
 	e.GET("/files", handler.GetAllFiles)
 	e.GET("/files/:uuid", handler.DownloadFile)
 
@@ -51,12 +29,14 @@ func setupFileServer(mockFileService *MockFileService) *echo.Echo {
 }
 
 func TestFileHandler_UploadFile(t *testing.T) {
-	mockFileService := new(MockFileService)
+	mockFileService := new(mockFileService)
+	mockCtxConverter := new(mockCtxConverter)
 	uploadResponse := &UploadFileResponse{UUID: uuid.New().String()}
 
+	mockCtxConverter.On("ConvertEchoCtxToCtx", mock.Anything).Return(context.TODO(), nil)
 	mockFileService.On("UploadFile", mock.Anything, mock.Anything).Return(uploadResponse, nil)
 
-	e := setupFileServer(mockFileService)
+	e := setupFileServer(mockFileService, mockCtxConverter)
 
 	server := httptest.NewServer(e)
 	defer server.Close()
@@ -66,16 +46,13 @@ func TestFileHandler_UploadFile(t *testing.T) {
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
 	fw, err := w.CreateFormFile("file", "test.txt")
-	if err != nil {
-		t.Fatalf("CreateFormFile: %s", err)
-	}
+	require.NoError(t, err)
 	_, err = fw.Write([]byte("test content"))
-	if err != nil {
-		t.Fatalf("Write: %s", err)
-	}
-	w.Close()
+	require.NoError(t, err)
+	err = w.Close()
+	require.NoError(t, err)
 
-	expect.POST("/upload").
+	expect.POST("/files").
 		WithHeader("Content-Type", w.FormDataContentType()).
 		WithBytes(b.Bytes()).
 		Expect().
@@ -83,31 +60,36 @@ func TestFileHandler_UploadFile(t *testing.T) {
 		JSON().Object().ContainsKey("uuid")
 
 	mockFileService.AssertExpectations(t)
+	mockCtxConverter.AssertExpectations(t)
 }
 
 func TestFileHandler_DeleteFile(t *testing.T) {
-	mockFileService := new(MockFileService)
+	mockFileService := new(mockFileService)
+	mockCtxConverter := new(mockCtxConverter)
 	deleteResponse := &DeleteFileResponse{UUID: "123"}
 
+	mockCtxConverter.On("ConvertEchoCtxToCtx", mock.Anything).Return(nil, nil)
 	mockFileService.On("DeleteFile", mock.Anything, mock.Anything).Return(deleteResponse, nil)
 
-	e := setupFileServer(mockFileService)
+	e := setupFileServer(mockFileService, mockCtxConverter)
 
 	server := httptest.NewServer(e)
 	defer server.Close()
 
 	expect := httpexpect.Default(t, server.URL)
 
-	expect.DELETE("/files/123").
+	expect.DELETE("/files").
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object().ContainsKey("uuid").HasValue("uuid", "123")
 
 	mockFileService.AssertExpectations(t)
+	mockCtxConverter.AssertExpectations(t)
 }
 
 func TestFileHandler_GetAllFiles(t *testing.T) {
-	mockFileService := new(MockFileService)
+	mockFileService := new(mockFileService)
+	mockCtxConverter := new(mockCtxConverter)
 	getAllFilesResponse := &GetAllFilesResponse{
 		Items: []GetAllFilesResponceItem{
 			{
@@ -119,9 +101,10 @@ func TestFileHandler_GetAllFiles(t *testing.T) {
 		},
 	}
 
+	mockCtxConverter.On("ConvertEchoCtxToCtx", mock.Anything).Return(nil, nil)
 	mockFileService.On("GetAllFiles", mock.Anything, mock.Anything).Return(getAllFilesResponse, nil)
 
-	e := setupFileServer(mockFileService)
+	e := setupFileServer(mockFileService, mockCtxConverter)
 
 	server := httptest.NewServer(e)
 	defer server.Close()
@@ -134,15 +117,18 @@ func TestFileHandler_GetAllFiles(t *testing.T) {
 		JSON().Object().ContainsKey("items")
 
 	mockFileService.AssertExpectations(t)
+	mockCtxConverter.AssertExpectations(t)
 }
 
 func TestFileHandler_DownloadFile(t *testing.T) {
-	mockFileService := new(MockFileService)
+	mockFileService := new(mockFileService)
+	mockCtxConverter := new(mockCtxConverter)
 	downloadResponse := &DownloadFileResponse{File: []byte("test content")}
 
+	mockCtxConverter.On("ConvertEchoCtxToCtx", mock.Anything).Return(nil, nil)
 	mockFileService.On("DownloadFile", mock.Anything, mock.Anything).Return(downloadResponse, nil)
 
-	e := setupFileServer(mockFileService)
+	e := setupFileServer(mockFileService, mockCtxConverter)
 
 	server := httptest.NewServer(e)
 	defer server.Close()
@@ -158,4 +144,5 @@ func TestFileHandler_DownloadFile(t *testing.T) {
 		Body().IsEqual("test content")
 
 	mockFileService.AssertExpectations(t)
+	mockCtxConverter.AssertExpectations(t)
 }

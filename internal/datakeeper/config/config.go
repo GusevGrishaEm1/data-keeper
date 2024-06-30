@@ -3,50 +3,115 @@ package config
 import (
 	"flag"
 	"os"
+	"strconv"
+	"time"
 
-	"gopkg.in/yaml.v3"
+	"github.com/joho/godotenv"
 )
 
 // Config file
 type Config struct {
-	Port        string            `yaml:"port"`
-	HTTPS       bool              `yaml:"https"`
-	URLAUTH     string            `yaml:"url_auth"`
-	URLDB       string            `yaml:"url_db"`
-	AuthService AuthServiceConfig `yaml:"auth_service"`
+	// Port service port
+	Port string
+	// HTTPS is secure http
+	HTTPS bool
+	// Postgres postgres config
+	Postgres Postgres
+	// AuthService auth service config
+	AuthService AuthService
 }
 
-// Auth service config
-type AuthServiceConfig struct {
-	Timeout int    `yaml:"timeout"`
-	JWTKey  string `yaml:"jwt_key"`
+// Postgres postgres config
+type Postgres struct {
+	Host     string
+	Port     int
+	DB       string
+	User     string
+	Password string
 }
 
-func LoadConfig(path string) (*Config, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
+// AuthService auth service config
+type AuthService struct {
+	Host    string
+	Port    int
+	Timeout time.Duration
+	JWTKey  string
+}
+
+// LoadConfig load config
+func LoadConfig() (*Config, error) {
+	// Load .env file if exists
+	_ = godotenv.Load()
+
+	// Define flags
+	port := flag.String("port", getEnv("PORT", "8080"), "service port")
+	https := flag.Bool("https", getEnvAsBool("HTTPS", false), "enable HTTPS")
+	postgresHost := flag.String("postgres_host", getEnv("POSTGRES_HOST", "localhost"), "Postgres host")
+	postgresPort := flag.Int("postgres_port", getEnvAsInt("POSTGRES_PORT", 5432), "Postgres port")
+	postgresDB := flag.String("postgres_db", getEnv("POSTGRES_DB", "postgres"), "Postgres database")
+	postgresUser := flag.String("postgres_user", getEnv("POSTGRES_USER", "postgres"), "Postgres user")
+	postgresPassword := flag.String("postgres_password", "", "Postgres password")
+	authHost := flag.String("auth_host", getEnv("AUTH_HOST", "localhost"), "Auth host")
+	authPort := flag.Int("auth_port", getEnvAsInt("AUTH_PORT", 50051), "Auth port")
+	authTimeout := flag.Duration("auth_timeout", getEnvAsDuration("AUTH_TIMEOUT", 30*time.Second), "Auth service timeout")
+	authJWTKey := flag.String("auth_jwt_key", getEnv("AUTH_JWT_KEY", ""), "Auth service JWT key")
+
+	// Parse flags
+	flag.Parse()
+
+	// Fill config
+	config := &Config{
+		Port:  *port,
+		HTTPS: *https,
+		Postgres: Postgres{
+			Host:     *postgresHost,
+			Port:     *postgresPort,
+			DB:       *postgresDB,
+			User:     *postgresUser,
+			Password: *postgresPassword,
+		},
+		AuthService: AuthService{
+			Host:    *authHost,
+			Port:    *authPort,
+			Timeout: *authTimeout,
+			JWTKey:  *authJWTKey,
+		},
 	}
-	config := &Config{}
-	err = yaml.Unmarshal(data, config)
-	if err != nil {
-		return nil, err
-	}
-	dbURL := os.Getenv("DB_URL")
-	if dbURL != "" {
-		config.URLDB = dbURL
-	}
-	flag.StringVar(&dbURL, "url_db", config.URLDB, "database url")
-	if dbURL != "" {
-		config.URLDB = dbURL
-	}
-	authURL := os.Getenv("AUTH_URL")
-	if authURL != "" {
-		config.URLAUTH = authURL
-	}
-	flag.StringVar(&authURL, "url_auth", config.URLAUTH, "auth url")
-	if authURL != "" {
-		config.URLAUTH = authURL
-	}
+
 	return config, nil
+}
+
+// getEnv gets the environment variable value or returns a default value
+func getEnv(key string, defaultValue string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return defaultValue
+}
+
+// getEnvAsInt gets the environment variable value as int or returns a default value
+func getEnvAsInt(key string, defaultValue int) int {
+	valStr := getEnv(key, "")
+	if val, err := strconv.ParseInt(valStr, 0, 16); err == nil {
+		return int(val)
+	}
+	return defaultValue
+}
+
+// getEnvAsBool gets the environment variable value as bool or returns a default value
+func getEnvAsBool(name string, defaultVal bool) bool {
+	valStr := getEnv(name, "")
+	if val, err := strconv.ParseBool(valStr); err == nil {
+		return val
+	}
+	return defaultVal
+}
+
+// getEnvAsDuration gets the environment variable value as duration or returns a default value
+func getEnvAsDuration(name string, defaultVal time.Duration) time.Duration {
+	valStr := getEnv(name, "")
+	if val, err := time.ParseDuration(valStr); err == nil {
+		return val
+	}
+	return defaultVal
 }

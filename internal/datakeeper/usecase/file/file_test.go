@@ -34,8 +34,8 @@ func (m *mockDataRepo) Delete(ctx context.Context, user string, uuid string) err
 	return args.Error(0)
 }
 
-func (m *mockDataRepo) GetByUUID(ctx context.Context, user string, uuid string, contentType entity.ContentType) (*entity.Data, error) {
-	args := m.Called(ctx, user, uuid, contentType)
+func (m *mockDataRepo) GetByUUID(ctx context.Context, user string, uuid string) (*entity.Data, error) {
+	args := m.Called(ctx, user, uuid)
 	return args.Get(0).(*entity.Data), args.Error(1)
 }
 
@@ -155,7 +155,7 @@ func TestGetAllFiles(t *testing.T) {
 	mockAuthService.On("GetUserFromContext", ctx).Return(user, nil)
 	mockKeyService.On("GetKeyForUser", user).Return(key, nil)
 
-	fileContent := FileContent{
+	fileContent := Content{
 		Name:   "test-file",
 		Format: "txt",
 		Size:   10,
@@ -170,13 +170,13 @@ func TestGetAllFiles(t *testing.T) {
 		{
 			UUID:        uuid.New().String(),
 			Content:     encryptedContent,
-			ContentType: entity.FILE,
+			ContentType: entity.File,
 			CreatedAt:   time.Now(),
 			CreatedBy:   user,
 		},
 	}
 
-	mockDataRepo.On("GetByUser", ctx, user, entity.FILE).Return(data, nil)
+	mockDataRepo.On("GetByUser", ctx, user, entity.File).Return(data, nil)
 
 	resp, err := service.GetAllFiles(ctx, handlers.GetAllFilesRequest{})
 	assert.NoError(t, err)
@@ -203,7 +203,7 @@ func TestDownloadFile(t *testing.T) {
 	mockAuthService.On("GetUserFromContext", ctx).Return(user, nil)
 	mockKeyService.On("GetKeyForUser", user).Return(key, nil)
 
-	metadata := FileContent{
+	metadata := Content{
 		Name:   "test-file",
 		Format: "txt",
 		Size:   10,
@@ -216,12 +216,12 @@ func TestDownloadFile(t *testing.T) {
 	data := entity.Data{
 		UUID:        fileUUID,
 		Content:     encryptedMetadata,
-		ContentType: entity.FILE,
+		ContentType: entity.File,
 		CreatedAt:   time.Now(),
 		CreatedBy:   user,
 	}
 
-	mockDataRepo.On("GetByUUID", ctx, user, fileUUID, entity.FILE).Return(&data, nil)
+	mockDataRepo.On("GetByUUID", ctx, user, fileUUID).Return(&data, nil)
 
 	fileContent := []byte("encrypted file content")
 	encryptedFileContent, err := lib.Encrypt(key, fileContent)

@@ -2,14 +2,14 @@ package entity
 
 import "time"
 
-// User's stored file
+// UserFile stored file
 type UserFile struct {
-	// File UUID
+	// UUID
 	UUID string
 	// File content
 	Content []byte
-	// Created at time
+	// CreatedAt when created
 	CreatedAt time.Time
-	// User who created file
+	// CreatedBy created by user
 	CreatedBy string
 }

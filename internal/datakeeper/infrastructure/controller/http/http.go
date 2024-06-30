@@ -10,65 +10,74 @@ import (
 	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/infrastructure/repository/postgres"
 	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/infrastructure/repository/postgres/repo"
 	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/usecase/auth"
-	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/usecase/card"
 	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/usecase/file"
 	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/usecase/key"
-	security_servicev1 "github.com/GusevGrishaEm1/protos/gen/go/security_service"
+	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/usecase/logpass"
+	securityservicev1 "github.com/GusevGrishaEm1/protos/gen/go/security_service"
 	"google.golang.org/grpc"
 
 	"github.com/labstack/echo"
 )
 
-func StartServer(context context.Context, config config.Config, logger *slog.Logger, conn *grpc.ClientConn, db *postgres.PostgresDB) error {
+func StartServer(context context.Context, config config.Config, logger *slog.Logger, conn *grpc.ClientConn, db *postgres.DB) error {
 	e := echo.New()
+
+	groupAPI := e.Group("/api")
+
+	// use middlewares logging
+	loggerMiddleware := middlewares.NewLoggerMiddleware(logger)
+	groupAPI.Use(loggerMiddleware.LoggerMiddleware)
+
 	// key service
 	keyService := key.NewKeyService()
 	// auth service
-	authService, err := auth.NewAuthService(security_servicev1.NewAuthClient(conn), keyService, logger)
+	authService, err := auth.NewAuthService(securityservicev1.NewAuthClient(conn), keyService, logger)
 	if err != nil {
 		return err
 	}
 	// auth handler
 	authHandler := handlers.NewAuthHandler(authService)
 
-	// use middlewares logging
-	loggerMiddlewarer := middlewares.NewLoggerMiddleware(logger)
-	e.Use(echo.MiddlewareFunc(loggerMiddlewarer.LoggerMiddleware))
-
 	// mapping auth handlers
-	e.POST("api/auth/login", authHandler.Login)
-	e.POST("api/auth/register", authHandler.Register)
+	groupAuth := groupAPI.Group("/auth")
+	groupAuth.POST("/login", authHandler.Login)
+	groupAuth.POST("/register", authHandler.Register)
 
-	// auth middlewarer
-	authMiddlewarer := middlewares.NewAuthMiddleware(config)
+	// auth middleware
+	authMiddleware := middlewares.NewAuthMiddleware(config)
 
 	// data repo
 	dataRepo := repo.NewDataRepo(db)
-	// card service
-	cardService := card.NewCardService(dataRepo, authService, keyService, slog.Default())
-	// card handler
-	cardHandler := handlers.NewCardHandler(cardService)
 
-	auth := echo.MiddlewareFunc(authMiddlewarer.AuthMiddleware)
+	// log/pass service
+	logPassService := logpass.NewLogPassService(dataRepo, keyService)
+	// converter echo.Context -> context.Context
+	ctxConverter := handlers.NewCtxConverter()
+	// log/pass handler
+	logPassHandler := handlers.NewLogPassHandler(logPassService, ctxConverter)
 
-	// mapping handlers
-	e.POST("api/cards", cardHandler.CreateCard, auth)
-	e.PATCH("api/cards", cardHandler.UpdateCard, auth)
-	e.GET("api/cards", cardHandler.GetCardsByUser, auth)
-	e.DELETE("api/cards", cardHandler.DeleteCard, auth)
+	// mapping log/pass handlers
+	groupLogPass := groupAPI.Group("/logpass")
+	groupLogPass.Use(authMiddleware.AuthMiddleware)
+	groupLogPass.POST("", logPassHandler.CreateLogPass)
+	groupLogPass.PATCH("", logPassHandler.UpdateLogPass)
+	groupLogPass.GET("", logPassHandler.GetAllLogPasses)
+	groupLogPass.DELETE("", logPassHandler.DeleteLogPass)
 
-	// user's files
+	// user's files repo
 	userFileRepo := repo.NewUserFileRepo(db)
 	// file service
 	fileService := file.NewFileService(dataRepo, userFileRepo, authService, keyService)
 	// file handler
-	fileHandler := handlers.NewFileHandler(fileService)
+	fileHandler := handlers.NewFileHandler(fileService, ctxConverter)
 
-	// mapping handlers
-	e.POST("api/files", fileHandler.UploadFile, auth)
-	e.DELETE("api/files", fileHandler.DeleteFile, auth)
-	e.GET("api/files", fileHandler.GetAllFiles, auth)
-	e.GET("api/files/:uuid", fileHandler.DownloadFile, auth)
+	// mapping files handlers
+	groupFile := groupAPI.Group("/files")
+	groupFile.Use(authMiddleware.AuthMiddleware)
+	groupFile.POST("", fileHandler.UploadFile)
+	groupFile.DELETE("", fileHandler.DeleteFile)
+	groupFile.GET("", fileHandler.GetAllFiles)
+	groupFile.GET("/:uuid", fileHandler.DownloadFile)
 
 	logger.Info("server started")
 	err = e.Start(config.Port)

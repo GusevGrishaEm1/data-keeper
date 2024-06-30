@@ -13,7 +13,7 @@ import (
 	security_servicev1 "github.com/GusevGrishaEm1/protos/gen/go/security_service"
 )
 
-// MockAuthClient mocks auth client
+// mockAuthClient mocks auth client
 type mockAuthClient struct {
 }
 
@@ -65,7 +65,6 @@ func TestSignIn(t *testing.T) {
 	service, err := NewAuthService(mockAuthClient, mockKeyService, slog.Default())
 	assert.NoError(t, err)
 
-	// success login
 	request := handlers.LoginRequest{
 		Email:    "existing@example.com",
 		Password: "password",
@@ -76,7 +75,6 @@ func TestSignIn(t *testing.T) {
 	assert.NotNil(t, response)
 	assert.Equal(t, "some_token", response.Token)
 
-	// error login
 	request = handlers.LoginRequest{
 		Email:    "nonexisting@example.com",
 		Password: "password",
@@ -94,7 +92,6 @@ func TestSignUp(t *testing.T) {
 	service, err := NewAuthService(mockAuthClient, mockKeyService, slog.Default())
 	assert.NoError(t, err)
 
-	// success registration
 	request := handlers.RegisterRequest{
 		Email:    "new@example.com",
 		Password: "password",
@@ -104,7 +101,6 @@ func TestSignUp(t *testing.T) {
 	assert.NotNil(t, response)
 	assert.Equal(t, "some_token", response.Token)
 
-	// failure registration
 	request = handlers.RegisterRequest{
 		Email:    "existing@example.com",
 		Password: "password",

@@ -17,7 +17,7 @@ type AuthService interface {
 	SignUp(ctx context.Context, r RegisterRequest) (*RegisterResponse, error)
 }
 
-// Login request
+// LoginRequest Login request
 type LoginRequest struct {
 	// Email user
 	Email string `json:"email"`
@@ -27,13 +27,13 @@ type LoginRequest struct {
 	Key string `json:"key"`
 }
 
-// Login response
+// LoginResponse Login response
 type LoginResponse struct {
 	// User token
 	Token string `json:"-"`
 }
 
-// Register request
+// RegisterRequest Register request
 type RegisterRequest struct {
 	// Email user
 	Email string `json:"email"`
@@ -41,7 +41,7 @@ type RegisterRequest struct {
 	Password string `json:"password"`
 }
 
-// Register response
+// RegisterResponse Register response
 type RegisterResponse struct {
 	// User token
 	Token string `json:"-"`
@@ -59,7 +59,7 @@ func NewAuthHandler(authService AuthService) *AuthHandler {
 	return &AuthHandler{authService: authService}
 }
 
-// Authentication
+// Login Authentication
 func (h *AuthHandler) Login(c echo.Context) error {
 	req := new(LoginRequest)
 	if err := c.Bind(req); err != nil {
@@ -80,7 +80,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
-// Registration
+// Register Registration
 func (h *AuthHandler) Register(c echo.Context) error {
 	req := new(RegisterRequest)
 	if err := c.Bind(req); err != nil {

@@ -2,4 +2,4 @@ package entity
 
 type USER string
 
-const USER_EMAIL USER = "User"
+const UserEmail USER = "User"

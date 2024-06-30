@@ -21,9 +21,8 @@ FROM alpine:latest AS runner
 WORKDIR /app
 
 COPY --from=builder /app/server /app/server
-COPY --from=builder /app/config/dev.yaml /app/config/dev.yaml
 COPY --from=builder /app/migrations /app/migrations
 
-EXPOSE 8081
+EXPOSE 8080
 
-CMD ["./server", "--config=./config/dev.yaml"]
+CMD ["./server"]

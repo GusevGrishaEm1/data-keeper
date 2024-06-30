@@ -2,7 +2,11 @@ package repo
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/config"
+	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/pressly/goose/v3"
 	"log"
 	"testing"
 	"time"
@@ -16,11 +20,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-var repo *dataRepo
+var repo *DataRepo
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
-
 	req := testcontainers.ContainerRequest{
 		Image:        "postgres:13",
 		ExposedPorts: []string{"5432/tcp"},
@@ -61,6 +64,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("failed to get config pool: %v", err)
 	}
+
 	pool, err := pgxpool.NewWithConfig(ctx, configPool)
 	if err != nil {
 		log.Fatalf("failed to get new pool: %v", err)
@@ -71,37 +75,45 @@ func TestMain(m *testing.M) {
 		log.Fatalf("failed to ping postgres: %v", err)
 	}
 
-	_, err = pool.Exec(ctx, `
-		create table if not exists "data" (
-		uuid uuid primary key,
-		content bytea not null,
-		content_type varchar(255) not null,
-		created_at timestamp not null,
-		created_by varchar(255) not null
-	);
-
-	create index if not exists data_idx on "data" (created_by);
-	`)
-
+	err = migration(&config.Config{PostgresDB: dbURI})
 	if err != nil {
-		log.Fatalf("failed to create table: %v", err)
+		log.Fatalf("failed to migrate: %v", err)
 	}
 
-	repo = NewDataRepo(&postgres.PostgresDB{DB: pool})
+	repo = NewDataRepo(&postgres.DB{DB: pool})
 
 	m.Run()
 }
 
-func clearTable() {
-	_, err := repo.DB.Exec(context.TODO(), `DELETE FROM "data"`)
+func migration(c *config.Config) error {
+	connToMigrate, err := sql.Open("pgx", c.PostgresDB)
+	if err != nil {
+		return err
+	}
+	if err := goose.SetDialect("postgres"); err != nil {
+		return err
+	}
+	if err := goose.Up(connToMigrate, "migrations"); err != nil {
+		return err
+	}
+	err = connToMigrate.Close()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func clearTable(ctx context.Context) {
+	_, err := repo.db.DB.Exec(ctx, `DELETE FROM "data"`)
 	if err != nil {
 		log.Fatalf("failed to clear table: %v", err)
 	}
 }
 
 func TestInsert(t *testing.T) {
-	defer clearTable()
 	ctx := context.Background()
+	defer clearTable(ctx)
+
 	data := entity.Data{
 		UUID:        uuid.New().String(),
 		Content:     []byte("test-content"),
@@ -114,11 +126,12 @@ func TestInsert(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	defer clearTable()
 	ctx := context.Background()
-	newuuid := uuid.New().String()
+	defer clearTable(ctx)
+
+	newUUID := uuid.New().String()
 	data := entity.Data{
-		UUID:        newuuid,
+		UUID:        newUUID,
 		Content:     []byte("test-content"),
 		ContentType: "text",
 		CreatedAt:   time.Now(),
@@ -126,25 +139,29 @@ func TestDelete(t *testing.T) {
 	}
 	err := repo.Insert(ctx, data)
 	assert.NoError(t, err)
-	err = repo.Delete(ctx, "test-user", newuuid)
+
+	err = repo.Delete(ctx, "test-user", newUUID)
 	assert.NoError(t, err)
 }
 
 func TestUpdate(t *testing.T) {
-	defer clearTable()
 	ctx := context.Background()
-	newuuid := uuid.New().String()
+	defer clearTable(ctx)
+
+	newUUID := uuid.New().String()
 	data := entity.Data{
-		UUID:        newuuid,
+		UUID:        newUUID,
 		Content:     []byte("test-content"),
 		ContentType: "text",
 		CreatedAt:   time.Now(),
 		CreatedBy:   "test-user",
 	}
+
 	err := repo.Insert(ctx, data)
 	assert.NoError(t, err)
+
 	updatedData := entity.Data{
-		UUID:        newuuid,
+		UUID:        newUUID,
 		Content:     []byte("updated-content"),
 		ContentType: "text",
 		CreatedAt:   time.Now(),
@@ -155,11 +172,12 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestGetAllByUser(t *testing.T) {
-	defer clearTable()
 	ctx := context.Background()
-	newuuid := uuid.New().String()
+	defer clearTable(ctx)
+
+	newUUID := uuid.New().String()
 	data := entity.Data{
-		UUID:        newuuid,
+		UUID:        newUUID,
 		Content:     []byte("test-content"),
 		ContentType: "text",
 		CreatedAt:   time.Now(),
@@ -167,11 +185,13 @@ func TestGetAllByUser(t *testing.T) {
 	}
 	err := repo.Insert(ctx, data)
 	assert.NoError(t, err)
-	datas, err := repo.GetByUser(ctx, "test-user", "text")
+
+	userData, err := repo.GetByUser(ctx, "test-user", "text")
 	assert.NoError(t, err)
-	assert.NotNil(t, datas)
-	assert.Equal(t, 1, len(datas))
-	assert.Equal(t, newuuid, datas[0].UUID)
-	assert.Equal(t, "test-content", string(datas[0].Content))
-	assert.Equal(t, entity.ContentType("text"), datas[0].ContentType)
+
+	assert.NotNil(t, userData)
+	assert.Equal(t, 1, len(userData))
+	assert.Equal(t, newUUID, userData[0].UUID)
+	assert.Equal(t, "test-content", string(userData[0].Content))
+	assert.Equal(t, entity.ContentType("text"), userData[0].ContentType)
 }

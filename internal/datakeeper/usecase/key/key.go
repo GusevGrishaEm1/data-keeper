@@ -3,23 +3,24 @@ package key
 import (
 	"math/rand"
 	"sync"
+	"time"
 
 	customerr "github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/error"
 )
 
-type keyService struct {
+type Service struct {
 	keys map[string]string
-	m    sync.Mutex
+	mu   sync.RWMutex
 }
 
-func NewKeyService() *keyService {
-	rand.NewSource(34)
-	return &keyService{
-		keys: make(map[string]string),
-	}
+func NewKeyService() *Service {
+	rand.NewSource(int64(time.Now().Nanosecond()))
+	return &Service{keys: make(map[string]string)}
 }
 
-func (s *keyService) GetKeyForUser(user string) (string, error) {
+func (s *Service) GetKeyForUser(user string) (string, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	key, ok := s.keys[user]
 	if !ok {
 		return "", customerr.Error(customerr.NO_KEY_IN_CONTEXT)
@@ -27,16 +28,16 @@ func (s *keyService) GetKeyForUser(user string) (string, error) {
 	return key, nil
 }
 
-func (s *keyService) SetKeyForUser(user string, key string) error {
-	s.m.Lock()
-	defer s.m.Unlock()
+func (s *Service) SetKeyForUser(user string, key string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.keys[user] = key
 	return nil
 }
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
-func (s *keyService) GenerateKey() (string, error) {
+func (s *Service) GenerateKey() (string, error) {
 	const length = 32
 	b := make([]rune, length)
 	for i := range b {

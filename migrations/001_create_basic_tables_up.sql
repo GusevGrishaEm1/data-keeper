@@ -1,5 +1,5 @@
 -- +goose Up
-create table if not exists "data" (
+create table if not exists user_data (
     uuid uuid primary key,
     content bytea not null,
     content_type varchar(255) not null,
@@ -7,9 +7,9 @@ create table if not exists "data" (
     created_by varchar(255) not null
 );
 
-create index if not exists data_idx on "data" (created_by);
+create index if not exists data_idx on user_data (created_by);
 
-create table if not exists "user_file" (
+create table if not exists file_repository (
     uuid uuid primary key,
     content bytea not null,
     created_at timestamp not null,
@@ -17,6 +17,6 @@ create table if not exists "user_file" (
 );
 
 -- +goose Down
-DROP TABLE IF EXISTS "user_file";
+DROP TABLE IF EXISTS file_repository;
 DROP INDEX IF EXISTS data_idx;
-DROP TABLE IF EXISTS "data";
+DROP TABLE IF EXISTS user_data;
