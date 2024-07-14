@@ -2,10 +2,7 @@ version: '3.8'
 
 services:
   data-keeper:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: runner
+    image: grishaem1/datakeeper:latest
     ports:
       - "8080:8080"
     depends_on:

@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	customerr "github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/error"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
 // FileService File service
@@ -84,6 +84,16 @@ func NewFileHandler(fileService FileService, ctxConverter ctxConverter) *FileHan
 }
 
 // UploadFile upload file for user
+// @Summary Upload a file
+// @Description Uploads a file to the server
+// @Tags files
+// @Accept mpfd
+// @Produce json
+// @Param file formData file true "File to upload"
+// @Success 201 {object} UploadFileResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /files/upload [post]
 func (h *FileHandler) UploadFile(c echo.Context) error {
 	file, err := c.FormFile("file")
 	if err != nil {
@@ -126,6 +136,16 @@ func (h *FileHandler) UploadFile(c echo.Context) error {
 }
 
 // DeleteFile delete file for user
+// @Summary Delete a file
+// @Description Deletes a file from the server
+// @Tags files
+// @Accept json
+// @Produce json
+// @Param uuid body DeleteFileRequest true "UUID of the file to delete"
+// @Success 200 {object} DeleteFileResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /files/delete [post]
 func (h *FileHandler) DeleteFile(c echo.Context) error {
 	req := new(DeleteFileRequest)
 	if err := c.Bind(req); err != nil {
@@ -146,6 +166,14 @@ func (h *FileHandler) DeleteFile(c echo.Context) error {
 }
 
 // GetAllFiles get all files for user
+// @Summary Get all files
+// @Description Retrieves all files for the user
+// @Tags files
+// @Produce json
+// @Success 200 {object} GetAllFilesResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /files [get]
 func (h *FileHandler) GetAllFiles(c echo.Context) error {
 	ctx, err := h.ctxConverter.ConvertEchoCtxToCtx(c)
 	if err != nil {
@@ -161,6 +189,15 @@ func (h *FileHandler) GetAllFiles(c echo.Context) error {
 }
 
 // DownloadFile download file for user
+// @Summary Download a file
+// @Description Downloads a file from the server
+// @Tags files
+// @Produce octet-stream
+// @Param uuid body DownloadFileRequest true "UUID of the file to download"
+// @Success 200 {file} DownloadFileResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /files/download [post]
 func (h *FileHandler) DownloadFile(c echo.Context) error {
 	req := new(DownloadFileRequest)
 	if err := c.Bind(req); err != nil {

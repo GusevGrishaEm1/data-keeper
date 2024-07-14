@@ -6,7 +6,7 @@ import (
 	"time"
 
 	customerr "github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/error"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
 // AuthService Auth service interface
@@ -19,8 +19,8 @@ type AuthService interface {
 
 // LoginRequest Login request
 type LoginRequest struct {
-	// Email user
-	Email string `json:"email"`
+	// Login user
+	Login string `json:"login"`
 	// User password
 	Password string `json:"password"`
 	// Key cypher
@@ -29,23 +29,23 @@ type LoginRequest struct {
 
 // LoginResponse Login response
 type LoginResponse struct {
-	// User token
-	Token string `json:"-"`
+	// Token user's token
+	Token string `json:"token"`
 }
 
 // RegisterRequest Register request
 type RegisterRequest struct {
-	// Email user
-	Email string `json:"email"`
-	// User password
+	// Login user's login
+	Login string `json:"login"`
+	// Password user's password
 	Password string `json:"password"`
 }
 
 // RegisterResponse Register response
 type RegisterResponse struct {
-	// User token
-	Token string `json:"-"`
-	// User key
+	// Token user's token
+	Token string `json:"token"`
+	// Key user's generated key
 	Key string `json:"key"`
 }
 
@@ -60,6 +60,16 @@ func NewAuthHandler(authService AuthService) *AuthHandler {
 }
 
 // Login Authentication
+// @Summary Login user
+// @Description Authenticate user and get token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param login body LoginRequest true "Login request"
+// @Success 200 {object} LoginResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/auth/login [post]
 func (h *AuthHandler) Login(c echo.Context) error {
 	req := new(LoginRequest)
 	if err := c.Bind(req); err != nil {
@@ -81,6 +91,16 @@ func (h *AuthHandler) Login(c echo.Context) error {
 }
 
 // Register Registration
+// @Summary Register user
+// @Description Register new user and get token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param register body RegisterRequest true "Register request"
+// @Success 200 {object} RegisterResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/auth/register [post]
 func (h *AuthHandler) Register(c echo.Context) error {
 	req := new(RegisterRequest)
 	if err := c.Bind(req); err != nil {

@@ -7,7 +7,7 @@ import (
 	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/config"
 	customerr "github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/error"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
 // AuthMiddleware auth middleware

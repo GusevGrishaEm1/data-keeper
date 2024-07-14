@@ -11,14 +11,30 @@ import (
 	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/usecase/key"
 	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/usecase/logpass"
 	securityservicev1 "github.com/GusevGrishaEm1/protos/gen/go/security_service"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	echoSwagger "github.com/swaggo/echo-swagger"
 	"google.golang.org/grpc"
 	"log/slog"
+	"net/http"
 	"strconv"
 )
 
-func StartServer(config config.Config, logger *slog.Logger, conn *grpc.ClientConn, db *postgres.DB) error {
+func StartServer(config config.Config, logger *slog.Logger, authClient *grpc.ClientConn, db *postgres.DB) error {
 	e := echo.New()
+
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
+		AllowHeaders: []string{
+			echo.HeaderOrigin,
+			echo.HeaderContentType,
+			echo.HeaderAccept,
+			"Authorization", // Пример добавления дополнительного заголовка
+		},
+	}))
+
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	groupAPI := e.Group("/api")
 
@@ -29,7 +45,7 @@ func StartServer(config config.Config, logger *slog.Logger, conn *grpc.ClientCon
 	// key service
 	keyService := key.NewKeyService()
 	// auth service
-	authService, err := auth.NewAuthService(securityservicev1.NewAuthClient(conn), keyService, logger)
+	authService, err := auth.NewAuthService(securityservicev1.NewAuthClient(authClient), keyService, logger)
 	if err != nil {
 		return err
 	}
@@ -56,7 +72,7 @@ func StartServer(config config.Config, logger *slog.Logger, conn *grpc.ClientCon
 
 	// mapping log/pass handlers
 	groupLogPass := groupAPI.Group("/logpass")
-	groupLogPass.Use(authMiddleware.AuthMiddleware)
+	//groupLogPass.Use(authMiddleware.AuthMiddleware)
 	groupLogPass.POST("", logPassHandler.CreateLogPass)
 	groupLogPass.PATCH("", logPassHandler.UpdateLogPass)
 	groupLogPass.GET("", logPassHandler.GetAllLogPasses)

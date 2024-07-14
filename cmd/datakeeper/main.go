@@ -4,20 +4,34 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	_ "github.com/GusevGrishaEm1/data-keeper/cmd/datakeeper/docs"
+	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/config"
+	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/infrastructure/controller/http"
+	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/infrastructure/repository/postgres"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"log/slog"
 	"os"
 	"strconv"
 	"time"
-
-	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/config"
-	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/infrastructure/controller/http"
-	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/infrastructure/repository/postgres"
-
-	_ "github.com/jackc/pgx/v5/stdlib"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
+
+// @title Swagger Example API
+// @version 1.0
+// @description This is a sample server Echo server.
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:8080
+// @BasePath /
 
 func main() {
 	// load config
