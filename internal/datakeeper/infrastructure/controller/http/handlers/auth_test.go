@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/gavv/httpexpect/v2"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -23,7 +23,7 @@ func setupServer(mockAuthService *mockAuthService) *echo.Echo {
 func TestAuthHandler_Login(t *testing.T) {
 	mockAuthService := new(mockAuthService)
 	loginRequest := LoginRequest{
-		Email:    "test@example.com",
+		Login:    "test@example.com",
 		Password: "password",
 		Key:      "key",
 	}
@@ -40,7 +40,7 @@ func TestAuthHandler_Login(t *testing.T) {
 
 	// Prepare request data
 	reqData := map[string]interface{}{
-		"email":    loginRequest.Email,
+		"login":    loginRequest.Login,
 		"password": loginRequest.Password,
 		"key":      loginRequest.Key,
 	}
@@ -58,10 +58,10 @@ func TestAuthHandler_Login(t *testing.T) {
 func TestAuthHandler_Register(t *testing.T) {
 	mockAuthService := new(mockAuthService)
 	registerRequest := RegisterRequest{
-		Email:    "test@example.com",
+		Login:    "test@example.com",
 		Password: "password",
 	}
-	registerResponse := &RegisterResponse{Token: "token", Key: "key"}
+	registerResponse := &RegisterResponse{Key: "key"}
 
 	mockAuthService.On("SignUp", mock.Anything, registerRequest).Return(registerResponse, nil)
 
@@ -74,7 +74,7 @@ func TestAuthHandler_Register(t *testing.T) {
 
 	// Prepare request data
 	reqData := map[string]interface{}{
-		"email":    registerRequest.Email,
+		"login":    registerRequest.Login,
 		"password": registerRequest.Password,
 	}
 
@@ -82,8 +82,7 @@ func TestAuthHandler_Register(t *testing.T) {
 	expect.POST("/register").
 		WithJSON(reqData).
 		Expect().
-		Status(http.StatusOK).
-		Cookie("User").Value().IsEqual("token")
+		Status(http.StatusOK)
 
 	mockAuthService.AssertExpectations(t)
 }
