@@ -3,7 +3,7 @@ module github.com/GusevGrishaEm1/data-keeper
 go 1.22.2
 
 require (
-	github.com/GusevGrishaEm1/protos v0.0.0-20240602090938-ae40ab3be4f7
+	github.com/GusevGrishaEm1/protos v0.0.0-20240714090638-0979846d36fc
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo v3.3.10+incompatible

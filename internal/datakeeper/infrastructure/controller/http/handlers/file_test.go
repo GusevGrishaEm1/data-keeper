@@ -11,7 +11,7 @@ import (
 
 	"github.com/gavv/httpexpect/v2"
 	"github.com/google/uuid"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/mock"
 )
 

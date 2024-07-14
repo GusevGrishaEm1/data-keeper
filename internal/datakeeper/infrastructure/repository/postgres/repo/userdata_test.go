@@ -5,14 +5,15 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/config"
+	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/infrastructure/repository/postgres"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 	"log"
+	"strconv"
 	"testing"
 	"time"
 
 	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/entity"
-	"github.com/GusevGrishaEm1/data-keeper/internal/datakeeper/infrastructure/repository/postgres"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
@@ -74,26 +75,44 @@ func TestMain(m *testing.M) {
 	if err = pool.Ping(ctx); err != nil {
 		log.Fatalf("failed to ping postgres: %v", err)
 	}
-
-	err = migration(&config.Config{PostgresDB: dbURI})
+	portInt, err := strconv.Atoi(port.Port())
+	if err != nil {
+		log.Fatalf("failed to convert port to int: %v", err)
+	}
+	postgresC := &config.Postgres{
+		Host:     host,
+		User:     "user",
+		Password: "password",
+		Port:     portInt,
+		DB:       "testdb",
+	}
+	err = migration(config.Config{Postgres: *postgresC})
 	if err != nil {
 		log.Fatalf("failed to migrate: %v", err)
 	}
 
-	repo = NewDataRepo(&postgres.DB{DB: pool})
+	dbpostgres, err := postgres.NewPostgresDB(context.TODO(), config.Config{Postgres: *postgresC})
+	if err != nil {
+		log.Fatalf("failed to connect to postgres: %v", err)
+	}
+	repo = NewDataRepo(dbpostgres)
 
 	m.Run()
 }
 
-func migration(c *config.Config) error {
-	connToMigrate, err := sql.Open("pgx", c.PostgresDB)
+func migration(c config.Config) error {
+	postgresURL := fmt.Sprintf(
+		"postgres://%s:%s@%s:%d/%s",
+		c.Postgres.User, c.Postgres.Password, c.Postgres.Host, c.Postgres.Port, c.Postgres.DB,
+	)
+	connToMigrate, err := sql.Open("pgx", postgresURL)
 	if err != nil {
 		return err
 	}
 	if err := goose.SetDialect("postgres"); err != nil {
 		return err
 	}
-	if err := goose.Up(connToMigrate, "migrations"); err != nil {
+	if err := goose.Up(connToMigrate, "../../../../../../migrations"); err != nil {
 		return err
 	}
 	err = connToMigrate.Close()
@@ -104,7 +123,7 @@ func migration(c *config.Config) error {
 }
 
 func clearTable(ctx context.Context) {
-	_, err := repo.db.DB.Exec(ctx, `DELETE FROM "data"`)
+	_, err := repo.db.DB.Exec(ctx, `DELETE FROM "user_data"`)
 	if err != nil {
 		log.Fatalf("failed to clear table: %v", err)
 	}

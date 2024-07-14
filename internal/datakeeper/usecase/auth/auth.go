@@ -28,12 +28,12 @@ func NewAuthService(authClient securityservicev1.AuthClient, keyService KeyServi
 
 // SignIn sign in user
 func (a *Service) SignIn(ctx context.Context, r handlers.LoginRequest) (*handlers.LoginResponse, error) {
-	res, err := a.authClient.Login(ctx, &securityservicev1.LoginRequest{Email: r.Email, Password: r.Password})
+	res, err := a.authClient.Login(ctx, &securityservicev1.LoginRequest{Login: r.Login, Password: r.Password})
 	if err != nil {
 		fmt.Print(err.Error())
 		return nil, err
 	}
-	if err = a.keyService.SetKeyForUser(r.Email, r.Key); err != nil {
+	if err = a.keyService.SetKeyForUser(r.Login, r.Key); err != nil {
 		return nil, err
 	}
 	return &handlers.LoginResponse{Token: res.Token}, nil
@@ -41,7 +41,7 @@ func (a *Service) SignIn(ctx context.Context, r handlers.LoginRequest) (*handler
 
 // SignUp sign up user
 func (a *Service) SignUp(ctx context.Context, r handlers.RegisterRequest) (*handlers.RegisterResponse, error) {
-	res, err := a.authClient.Register(ctx, &securityservicev1.RegisterRequest{Email: r.Email, Password: r.Password})
+	_, err := a.authClient.Register(ctx, &securityservicev1.RegisterRequest{Login: r.Login, Password: r.Password})
 	if err != nil {
 		a.logger.Error(err.Error())
 		return nil, err
@@ -50,10 +50,10 @@ func (a *Service) SignUp(ctx context.Context, r handlers.RegisterRequest) (*hand
 	if err != nil {
 		return nil, err
 	}
-	if err = a.keyService.SetKeyForUser(r.Email, key); err != nil {
+	if err = a.keyService.SetKeyForUser(r.Login, key); err != nil {
 		return nil, err
 	}
-	return &handlers.RegisterResponse{Token: res.Token, Key: key}, nil
+	return &handlers.RegisterResponse{Key: key}, nil
 }
 
 // GetUserFromContext get user from context

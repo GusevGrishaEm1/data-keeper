@@ -43,8 +43,6 @@ type RegisterRequest struct {
 
 // RegisterResponse Register response
 type RegisterResponse struct {
-	// Token user's token
-	Token string `json:"token"`
 	// Key user's generated key
 	Key string `json:"key"`
 }
@@ -111,12 +109,6 @@ func (h *AuthHandler) Register(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, customerr.ToJson(err.Error()))
 	}
-
-	c.SetCookie(&http.Cookie{
-		Name:    "User",
-		Value:   res.Token,
-		Expires: time.Now().Add(24 * time.Hour),
-	})
 
 	return c.JSON(http.StatusOK, res)
 }

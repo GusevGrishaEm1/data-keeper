@@ -19,7 +19,7 @@ type mockAuthClient struct {
 
 // Login mock
 func (m *mockAuthClient) Login(ctx context.Context, in *security_servicev1.LoginRequest, opts ...grpc.CallOption) (*security_servicev1.LoginResponse, error) {
-	if in.Email == "existing@example.com" && in.Password == "password" {
+	if in.Login == "existing@example.com" && in.Password == "password" {
 		return &security_servicev1.LoginResponse{Token: "some_token"}, nil
 	}
 	return nil, errors.New("login failed")
@@ -27,8 +27,8 @@ func (m *mockAuthClient) Login(ctx context.Context, in *security_servicev1.Login
 
 // Register mock
 func (m *mockAuthClient) Register(ctx context.Context, in *security_servicev1.RegisterRequest, opts ...grpc.CallOption) (*security_servicev1.RegisterResponse, error) {
-	if in.Email == "new@example.com" && in.Password == "password" {
-		return &security_servicev1.RegisterResponse{Token: "some_token"}, nil
+	if in.Login == "new@example.com" && in.Password == "password" {
+		return &security_servicev1.RegisterResponse{}, nil
 	}
 	return nil, errors.New("registration failed")
 }
@@ -66,7 +66,7 @@ func TestSignIn(t *testing.T) {
 	assert.NoError(t, err)
 
 	request := handlers.LoginRequest{
-		Email:    "existing@example.com",
+		Login:    "existing@example.com",
 		Password: "password",
 		Key:      "some_key",
 	}
@@ -76,7 +76,7 @@ func TestSignIn(t *testing.T) {
 	assert.Equal(t, "some_token", response.Token)
 
 	request = handlers.LoginRequest{
-		Email:    "nonexisting@example.com",
+		Login:    "nonexisting@example.com",
 		Password: "password",
 		Key:      "some_key",
 	}
@@ -93,16 +93,15 @@ func TestSignUp(t *testing.T) {
 	assert.NoError(t, err)
 
 	request := handlers.RegisterRequest{
-		Email:    "new@example.com",
+		Login:    "new@example.com",
 		Password: "password",
 	}
 	response, err := service.SignUp(ctx, request)
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
-	assert.Equal(t, "some_token", response.Token)
 
 	request = handlers.RegisterRequest{
-		Email:    "existing@example.com",
+		Login:    "existing@example.com",
 		Password: "password",
 	}
 	_, err = service.SignUp(ctx, request)
